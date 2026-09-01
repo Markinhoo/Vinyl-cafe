@@ -1,6 +1,6 @@
 # Vinyl Café — prototipo de jazz
 
-Prototipo jugable para Godot 4. Incluye una cafetería 3D sencilla, cinco vinilos interactivos, una tornamesa con música generada en tiempo real y restauración gradual de las luces.
+Prototipo jugable para Godot 4. Incluye una intro corta en una cafetería abandonada, cinco vinilos tirados en el suelo, puntos por acomodarlos, una tornamesa con música y restauración gradual de las luces.
 
 ## Ejecutar
 
@@ -17,10 +17,10 @@ Prototipo jugable para Godot 4. Incluye una cafetería 3D sencilla, cinco vinilo
 - Con un disco en la mano, pulsa **Q** mirando la tornamesa para ponerlo.
 - Con un disco en la tornamesa, pulsa **Q** mirando la tornamesa para retirarlo.
 - Después de retirarlo, pulsa **Q** mirando su estante para devolverlo con animación y sonido antes de tomar otro.
-- Pulsa **E** o clic para ordenar los vinilos de jazz y tocar los controles de la tornamesa.
+- Pulsa **E** o clic para levantar vinilos de jazz del suelo, acomodarlos en su estante correcto y tocar los controles de la tornamesa.
 - Pulsa **F** para prender o apagar la linterna.
 - Pulsa **Esc** para liberar el cursor; haz clic en la ventana para capturarlo otra vez.
-- Los cinco discos de jazz deben colocarse de izquierda a derecha en el mismo orden en que aparecen sobre la mesa.
+- Los cinco discos de jazz empiezan tirados en el suelo y deben colocarse de izquierda a derecha en su estante correcto. Cada acierto suma 100 puntos.
 
 La pista incluida es únicamente una demostración sintetizada por código; no contiene música comercial ni material con derechos de terceros.
 

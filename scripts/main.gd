@@ -8,8 +8,14 @@ var slot_nodes: Array[Node3D] = []
 var cafe_lights: Array[OmniLight3D] = []
 var turntable_disc: MeshInstance3D
 var progress_label: Label
+var score_label: Label
 var instruction_label: Label
 var status_label: Label
+var intro_panel: ColorRect
+var intro_label: Label
+var intro_elapsed := 0.0
+var intro_active := true
+var score := 0
 var audio_player: AudioStreamPlayer3D
 var audio_playback: AudioStreamGeneratorPlayback
 var return_sound_player: AudioStreamPlayer3D
@@ -62,9 +68,11 @@ func _ready() -> void:
 	build_world()
 	build_ui()
 	update_progress()
+	start_intro()
 	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _process(delta: float) -> void:
+	update_intro(delta)
 	if record_spinning:
 		turntable_disc.rotate_y(delta * TAU * get_playback_multiplier())
 		fill_jazz_audio()
@@ -106,7 +114,7 @@ func build_world() -> void:
 
 	player = CharacterBody3D.new()
 	player.name = "Player"
-	player.position = Vector3(0, 1.0, 4.2)
+	player.position = Vector3(0, 1.0, 4.65)
 	var player_collision := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.35
@@ -148,17 +156,20 @@ func build_world() -> void:
 		var slot := make_interactive_box("JazzSlot%d" % i, Vector3(0.82, 1.15, 0.16), Vector3(x, 1.15, -3.31), Color("211917"), "slot", i)
 		slot_nodes.append(slot)
 
-	# Table with the unsorted records.
-	make_box("TableTop", Vector3(5.5, 0.25, 2.0), Vector3(0, 1.05, 1.6), Color("51311f"))
-	for x in [-2.25, 2.25]:
-		make_box("TableLeg", Vector3(0.25, 1.1, 0.25), Vector3(x, 0.5, 1.6), Color("392216"))
-
+	# Discos de jazz tirados en el suelo al entrar a la cafetería abandonada.
 	var colors := [Color("7b3045"), Color("304f72"), Color("86682e"), Color("446247"), Color("684072")]
 	var titles := ["Midnight Blue", "Rain on 52nd", "Amber Notes", "Green Room", "Last Set"]
+	var floor_positions: Array[Vector3] = [
+		Vector3(-2.9, 0.08, 2.65),
+		Vector3(-1.35, 0.08, 1.85),
+		Vector3(0.15, 0.08, 2.45),
+		Vector3(1.65, 0.08, 1.70),
+		Vector3(2.85, 0.08, 2.75)
+	]
+	var floor_rotations: Array[float] = [18.0, -24.0, 41.0, -13.0, 29.0]
 	for i in VINYL_COUNT:
-		var x := -2.0 + i
-		var vinyl := make_interactive_box(titles[i], Vector3(0.82, 0.82, 0.10), Vector3(x, 1.62, 1.55), colors[i], "vinyl", i)
-		vinyl.rotation = Vector3(deg_to_rad(-12), 0.0, 0.0)
+		var vinyl := make_interactive_box(titles[i], Vector3(0.82, 0.82, 0.10), floor_positions[i], colors[i], "vinyl", i)
+		vinyl.rotation = Vector3(deg_to_rad(-90.0), 0.0, deg_to_rad(floor_rotations[i]))
 		vinyl_nodes.append(vinyl)
 
 	# Lanzamientos de la sección de artistas independientes.
@@ -353,7 +364,7 @@ func build_ui() -> void:
 	var panel := ColorRect.new()
 	panel.color = Color(0.04, 0.025, 0.02, 0.86)
 	panel.position = Vector2(24, 22)
-	panel.size = Vector2(420, 142)
+	panel.size = Vector2(460, 174)
 	layer.add_child(panel)
 
 	var title := Label.new()
@@ -367,8 +378,14 @@ func build_ui() -> void:
 	progress_label.add_theme_font_size_override("font_size", 20)
 	panel.add_child(progress_label)
 
+	score_label = Label.new()
+	score_label.position = Vector2(22, 78)
+	score_label.add_theme_font_size_override("font_size", 20)
+	score_label.add_theme_color_override("font_color", Color("9fe88f"))
+	panel.add_child(score_label)
+
 	status_label = Label.new()
-	status_label.position = Vector2(22, 82)
+	status_label.position = Vector2(22, 110)
 	status_label.add_theme_color_override("font_color", Color("e6b96c"))
 	panel.add_child(status_label)
 
@@ -383,6 +400,41 @@ func build_ui() -> void:
 	crosshair.position = Vector2(-7, -14)
 	crosshair.add_theme_font_size_override("font_size", 24)
 	layer.add_child(crosshair)
+
+	intro_panel = ColorRect.new()
+	intro_panel.color = Color(0.02, 0.015, 0.012, 0.88)
+	intro_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(intro_panel)
+	intro_label = Label.new()
+	intro_label.text = "La cafetería está abandonada.\nLos discos quedaron tirados en el suelo.\nOrdénalos en sus estantes correctos para devolverle vida y ganar puntos."
+	intro_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	intro_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	intro_label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	intro_label.add_theme_font_size_override("font_size", 30)
+	intro_label.add_theme_color_override("font_color", Color("f1c27d"))
+	intro_panel.add_child(intro_label)
+
+func start_intro() -> void:
+	intro_active = true
+	intro_elapsed = 0.0
+	if intro_panel != null:
+		intro_panel.visible = true
+		intro_panel.modulate.a = 1.0
+	status_label.text = "Entra, recoge los discos del suelo y ordénalos por portada."
+
+func update_intro(delta: float) -> void:
+	if not intro_active:
+		return
+	intro_elapsed += delta
+	if intro_elapsed < 4.2:
+		return
+	intro_active = false
+	if intro_panel != null:
+		var tween: Tween = create_tween()
+		tween.tween_property(intro_panel, "modulate:a", 0.0, 0.9)
+		tween.finished.connect(func() -> void:
+			intro_panel.visible = false
+		)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -444,7 +496,7 @@ func handle_click(object: Object) -> void:
 	if kind == "vinyl" and not placed[index]:
 		artist_selected = false
 		selected_vinyl = index
-		status_label.text = "Seleccionado: %s" % vinyl_nodes[index].name
+		status_label.text = "Levantaste: %s. Busca su estante correcto para ganar puntos." % vinyl_nodes[index].name
 	elif kind == "artist_record":
 		selected_vinyl = -1
 		if artist_on_turntable:
@@ -770,10 +822,14 @@ func place_selected(slot_index: int) -> void:
 		status_label.text = "No encaja: revisa el orden de las portadas."
 		return
 	placed[selected_vinyl] = true
+	score += 100
 	var record := vinyl_nodes[selected_vinyl]
-	record.position = slot_nodes[slot_index].position + Vector3(0, 0, 0.12)
-	record.rotation = Vector3.ZERO
-	status_label.text = "%s restauró parte de la cafetería." % record.name
+	var target_position: Vector3 = slot_nodes[slot_index].position + Vector3(0, 0, 0.12)
+	var tween: Tween = create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(record, "position", target_position, 0.34).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	tween.tween_property(record, "rotation", Vector3.ZERO, 0.34).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	status_label.text = "%s volvió a su estante. +100 puntos." % record.name
 	selected_vinyl = -1
 	update_progress()
 
@@ -781,12 +837,14 @@ func update_progress() -> void:
 	var completed := placed.count(true)
 	var percent := completed * 100 / VINYL_COUNT
 	progress_label.text = "%d / %d vinilos — %d%%" % [completed, VINYL_COUNT, percent]
+	if score_label != null:
+		score_label.text = "Puntos: %d" % score
 	for i in cafe_lights.size():
 		var target := 2.4 if i < completed else 0.0
 		var tween: Tween = create_tween()
 		tween.tween_property(cafe_lights[i], "light_energy", target, 0.8)
 	if completed == VINYL_COUNT:
-		status_label.text = "¡Jazz completo! La cafetería vuelve a respirar."
+		status_label.text = "¡Jazz completo! La cafetería vuelve a respirar. Total: %d puntos." % score
 
 func play_selected_record() -> void:
 	if artist_selected and active_artist_id >= 0:
