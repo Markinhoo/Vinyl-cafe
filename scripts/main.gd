@@ -3,6 +3,7 @@ extends Node3D
 const VINYL_COUNT := 5
 var selected_vinyl := -1
 var placed: Array[bool] = [false, false, false, false, false]
+var artist_placed: Array[bool] = [false, false]
 var vinyl_nodes: Array[Node3D] = []
 var slot_nodes: Array[Node3D] = []
 var cafe_lights: Array[OmniLight3D] = []
@@ -15,6 +16,7 @@ var intro_panel: ColorRect
 var intro_label: Label
 var intro_elapsed := 0.0
 var intro_active := true
+var intro_walk_tween: Tween
 var score := 0
 var audio_player: AudioStreamPlayer3D
 var audio_playback: AudioStreamGeneratorPlayback
@@ -42,7 +44,8 @@ var artist_names: Array[String] = ["Abraham HDZ", "9 MONARCA"]
 var artist_genres: Array[String] = ["Regional mexicano", "Independiente"]
 var artist_audio_paths: Array[String] = ["res://assets/audio/hoy_es_diferente.mp3", "res://assets/audio/promesa_perdida.mp3"]
 var artist_cover_paths: Array[String] = ["res://assets/covers/hoy_es_diferente.png", "res://assets/covers/promesa_perdida.jpeg"]
-var artist_shelf_positions: Array[Vector3] = [Vector3(-4.55, 1.55, -1.18), Vector3(-4.55, 1.55, 0.55)]
+var artist_shelf_positions: Array[Vector3] = [Vector3(-4.45, 1.55, -3.28), Vector3(4.45, 1.55, -3.28)]
+var artist_floor_positions: Array[Vector3] = [Vector3(-3.55, 0.08, 0.85), Vector3(3.25, 0.08, 0.95)]
 var amp_volume_db := -6.0
 var rpm_mode := 1
 var rpm_drag_position := 0.5
@@ -86,6 +89,9 @@ func _process(delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	if player == null:
 		return
+	if intro_active:
+		player.velocity = Vector3.ZERO
+		return
 	var input_2d := Vector2.ZERO
 	if Input.is_physical_key_pressed(KEY_A): input_2d.x -= 1.0
 	if Input.is_physical_key_pressed(KEY_D): input_2d.x += 1.0
@@ -114,7 +120,7 @@ func build_world() -> void:
 
 	player = CharacterBody3D.new()
 	player.name = "Player"
-	player.position = Vector3(0, 1.0, 4.65)
+	player.position = Vector3(0, 1.0, 6.20)
 	var player_collision := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.35
@@ -143,6 +149,21 @@ func build_world() -> void:
 	make_collision_box(Vector3(0.2, 6, 9), Vector3(-5.9, 3, 0))
 	make_collision_box(Vector3(0.2, 6, 9), Vector3(5.9, 3, 0))
 	make_collision_box(Vector3(12, 6, 0.2), Vector3(0, 3, 5.0))
+	# Fachada oscura de entrada con ventanas rotas para la intro.
+	make_box("StorefrontLeft", Vector3(3.15, 3.4, 0.16), Vector3(-4.35, 1.7, 4.86), Color("17110f"))
+	make_box("StorefrontRight", Vector3(3.15, 3.4, 0.16), Vector3(4.35, 1.7, 4.86), Color("17110f"))
+	make_box("StorefrontTop", Vector3(12.0, 1.05, 0.16), Vector3(0, 3.95, 4.86), Color("1f1715"))
+	make_box("DoorFrameTop", Vector3(2.55, 0.18, 0.22), Vector3(0, 2.95, 4.76), Color("4a2c1d"))
+	var door_x_positions: Array[float] = [-1.35, 1.35]
+	for door_x in door_x_positions:
+		make_box("DoorFrameSide", Vector3(0.16, 3.0, 0.22), Vector3(door_x, 1.5, 4.76), Color("4a2c1d"))
+	var window_x_positions: Array[float] = [-4.35, 4.35]
+	for window_x in window_x_positions:
+		make_box("BrokenWindow", Vector3(1.45, 0.9, 0.05), Vector3(window_x, 2.18, 4.68), Color("0b1114"))
+		make_box("BrokenWindowFrameH", Vector3(1.65, 0.07, 0.08), Vector3(window_x, 2.18, 4.64), Color("75635a"))
+		make_box("BrokenWindowFrameV", Vector3(0.07, 1.05, 0.08), Vector3(window_x, 2.18, 4.63), Color("75635a"))
+		make_box("GlassShardA", Vector3(0.38, 0.04, 0.04), Vector3(window_x - 0.35, 1.82, 4.59), Color("8eb8c7"))
+		make_box("GlassShardB", Vector3(0.28, 0.04, 0.04), Vector3(window_x + 0.42, 2.50, 4.59), Color("8eb8c7"))
 
 	# Jazz shelving unit.
 	make_box("ShelfBack", Vector3(5.8, 3.7, 0.25), Vector3(0, 2.15, -3.95), Color("3b2418"))
@@ -172,7 +193,11 @@ func build_world() -> void:
 		vinyl.rotation = Vector3(deg_to_rad(-90.0), 0.0, deg_to_rad(floor_rotations[i]))
 		vinyl_nodes.append(vinyl)
 
-	# Lanzamientos de la sección de artistas independientes.
+	# Estantes de artistas por género, separados y pegados a la pared.
+	create_genre_shelf("REGIONAL MEXICANO", artist_shelf_positions[0], Color("7a4023"))
+	create_genre_shelf("INDEPENDIENTE", artist_shelf_positions[1], Color("253f62"))
+
+	# Lanzamientos de artistas independientes, también tirados en el suelo al inicio.
 	for artist_id in artist_titles.size():
 		var display := create_artist_display(
 			artist_id,
@@ -180,7 +205,8 @@ func build_world() -> void:
 			artist_names[artist_id],
 			artist_genres[artist_id],
 			artist_cover_paths[artist_id],
-			artist_shelf_positions[artist_id]
+			artist_shelf_positions[artist_id],
+			artist_floor_positions[artist_id]
 		)
 		artist_records.append(display)
 	artist_record = artist_records[0]
@@ -190,21 +216,21 @@ func build_world() -> void:
 	# Amplificador con faders arrastrables, como una pequeña mezcladora.
 	make_box("Amplifier", Vector3(2.35, 0.72, 0.18), Vector3(4.15, 0.48, 2.30), Color("181715"))
 	# Volumen a la derecha, integrado en la superficie de la tornamesa.
-	make_box("VolumeTrack", Vector3(0.055, 0.025, 0.72), Vector3(4.91, 1.205, 1.43), Color("3e4146"))
-	volume_fader = make_interactive_box("VolumeFader", Vector3(0.22, 0.055, 0.13), Vector3(4.91, 1.245, 1.46), Color("d7d9da"), "fader_volume", 0)
+	make_box("VolumeTrack", Vector3(0.68, 0.025, 0.055), Vector3(4.52, 1.225, 1.98), Color("3e4146"))
+	volume_fader = make_interactive_box("VolumeFader", Vector3(0.13, 0.055, 0.22), Vector3(4.52, 1.265, 1.98), Color("d7d9da"), "fader_volume", 0)
 	# RPM a la izquierda mediante tres botones pequeños.
-	make_interactive_box("RPM45", Vector3(0.18, 0.045, 0.12), Vector3(3.08, 1.225, 0.64), Color("82705c"), "rpm_45", 0)
-	make_interactive_box("RPM33", Vector3(0.18, 0.045, 0.12), Vector3(3.08, 1.225, 0.84), Color("d5b16d"), "rpm_33", 0)
-	make_interactive_box("RPM78", Vector3(0.18, 0.045, 0.12), Vector3(3.08, 1.225, 1.04), Color("82705c"), "rpm_78", 0)
+	make_interactive_box("RPM45", Vector3(0.18, 0.045, 0.12), Vector3(3.12, 1.265, 1.98), Color("82705c"), "rpm_45", 0)
+	make_interactive_box("RPM33", Vector3(0.18, 0.045, 0.12), Vector3(3.37, 1.265, 1.98), Color("d5b16d"), "rpm_33", 0)
+	make_interactive_box("RPM78", Vector3(0.18, 0.045, 0.12), Vector3(3.62, 1.265, 1.98), Color("82705c"), "rpm_78", 0)
 	var amp_controls := Label3D.new()
-	amp_controls.text = "RPM\n45   33⅓   78                         VOLUMEN"
-	amp_controls.position = Vector3(4.12, 1.29, 0.45)
+	amp_controls.text = "45     33⅓     78                 VOLUMEN"
+	amp_controls.position = Vector3(3.88, 1.34, 2.04)
 	amp_controls.font_size = 18
 	amp_controls.modulate = Color("e7c691")
 	amp_controls.outline_size = 4
 	add_child(amp_controls)
 	amp_display = Label3D.new()
-	amp_display.position = Vector3(4.15, 0.88, 2.41)
+	amp_display.position = Vector3(4.15, 0.88, 2.44)
 	amp_display.font_size = 23
 	amp_display.modulate = Color("8fe69b")
 	amp_display.outline_size = 4
@@ -402,11 +428,11 @@ func build_ui() -> void:
 	layer.add_child(crosshair)
 
 	intro_panel = ColorRect.new()
-	intro_panel.color = Color(0.02, 0.015, 0.012, 0.88)
+	intro_panel.color = Color(0.02, 0.015, 0.012, 0.28)
 	intro_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
 	layer.add_child(intro_panel)
 	intro_label = Label.new()
-	intro_label.text = "La cafetería está abandonada.\nLos discos quedaron tirados en el suelo.\nOrdénalos en sus estantes correctos para devolverle vida y ganar puntos."
+	intro_label.text = "Llegas a una cafetería abandonada.\nLas ventanas están rotas y los discos quedaron tirados.\nEntra, separa cada disco por género y revive el lugar."
 	intro_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	intro_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	intro_label.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -420,14 +446,27 @@ func start_intro() -> void:
 	if intro_panel != null:
 		intro_panel.visible = true
 		intro_panel.modulate.a = 1.0
-	status_label.text = "Entra, recoge los discos del suelo y ordénalos por portada."
+	if player != null:
+		player.position = Vector3(0, 1.0, 6.20)
+		player.rotation = Vector3.ZERO
+	if player_camera != null:
+		look_pitch = deg_to_rad(-3.0)
+		player_camera.rotation.x = look_pitch
+	intro_walk_tween = create_tween()
+	intro_walk_tween.tween_property(player, "position", Vector3(0, 1.0, 3.35), 4.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	status_label.text = "Entra, recoge los discos del suelo y ordénalos por género."
 
 func update_intro(delta: float) -> void:
 	if not intro_active:
 		return
 	intro_elapsed += delta
+	if player_camera != null:
+		var walk_bob: float = sin(intro_elapsed * 7.0) * 0.025
+		player_camera.position.y = 1.35 + walk_bob
 	if intro_elapsed < 4.2:
 		return
+	if player_camera != null:
+		player_camera.position.y = 1.35
 	intro_active = false
 	if intro_panel != null:
 		var tween: Tween = create_tween()
@@ -437,9 +476,11 @@ func update_intro(delta: float) -> void:
 		)
 
 func _unhandled_input(event: InputEvent) -> void:
+	if intro_active and not (event is InputEventKey and event.pressed and event.physical_keycode == KEY_ESCAPE):
+		return
 	if event is InputEventMouseMotion and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		if active_fader != "":
-			drag_fader(-event.relative.y)
+			drag_fader(event.relative.x)
 		else:
 			player.rotate_y(-event.relative.x * MOUSE_SENSITIVITY)
 			look_pitch = clamp(look_pitch - event.relative.y * MOUSE_SENSITIVITY, -1.35, 1.35)
@@ -472,7 +513,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				var kind: String = hit.collider.get_meta("kind")
 				if kind == "fader_volume":
 					active_fader = kind
-					status_label.text = "Arrastra verticalmente y suelta para ajustar."
+					status_label.text = "Arrastra horizontalmente y suelta para ajustar."
 				else:
 					handle_click(hit.collider)
 		else:
@@ -504,7 +545,7 @@ func handle_click(object: Object) -> void:
 		elif artist_holding:
 			status_label.text = "Ya llevas un disco. Devuélvelo a su estante antes de tomar otro."
 		else:
-			status_label.text = "%s — pulsa Q para tomar el disco." % artist_titles[index]
+			status_label.text = "%s — %s. Pulsa Q para tomarlo y llévalo a %s." % [artist_titles[index], artist_names[index], artist_genres[index]]
 	elif kind == "artist_slot":
 		if artist_holding:
 			status_label.text = "Pulsa Q mirando este estante para devolver el disco."
@@ -535,7 +576,7 @@ func handle_click(object: Object) -> void:
 		update_amplifier()
 		status_label.text = "78 RPM · rápida"
 	elif kind == "fader_volume":
-		status_label.text = "Mantén clic izquierdo y arrastra verticalmente."
+		status_label.text = "Mantén clic izquierdo y arrastra horizontalmente."
 
 
 
@@ -613,9 +654,9 @@ func _on_audio_finished() -> void:
 			tonearm_target_angle = tonearm_rest_angle
 			status_label.text = "El brazo regresó a su soporte."
 
-func drag_fader(vertical_delta: float) -> void:
+func drag_fader(horizontal_delta: float) -> void:
 	if active_fader == "fader_volume":
-		amp_volume_db = clamp(amp_volume_db + vertical_delta * 0.16, -30.0, 6.0)
+		amp_volume_db = clamp(amp_volume_db + horizontal_delta * 0.16, -30.0, 6.0)
 
 	update_amplifier()
 
@@ -643,7 +684,8 @@ func update_amplifier() -> void:
 		audio_player.pitch_scale = get_playback_multiplier()
 	if volume_fader != null:
 		var volume_t: float = inverse_lerp(-30.0, 6.0, amp_volume_db)
-		volume_fader.position.z = lerp(1.75, 1.10, volume_t)
+		volume_fader.position.x = lerp(4.18, 4.86, volume_t)
+		volume_fader.position.z = 1.98
 	if amp_display != null:
 		amp_display.text = "%+.0f dB      %s" % [amp_volume_db, get_rpm_label()]
 
@@ -728,6 +770,11 @@ func place_artist_on_shelf(slot_id: int) -> void:
 	if slot_id != active_artist_id:
 		status_label.text = "Esa funda pertenece a %s." % artist_names[slot_id]
 		return
+	var first_genre_placement: bool = not artist_placed[active_artist_id]
+	if first_genre_placement:
+		artist_placed[active_artist_id] = true
+		score += 150
+		update_progress()
 	artist_holding = false
 	artist_selected = false
 	hand_inspect_back = false
@@ -744,7 +791,7 @@ func place_artist_on_shelf(slot_id: int) -> void:
 	tween.tween_property(artist_record, "scale", Vector3.ONE, 0.38).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	tween.finished.connect(_on_artist_returned_to_shelf.bind(artist_record, active_artist_id))
 	play_return_sound(artist_shelf_positions[active_artist_id])
-	status_label.text = "Devolviendo %s a su estante..." % artist_titles[active_artist_id]
+	status_label.text = "Devolviendo %s al estante de %s%s" % [artist_titles[active_artist_id], artist_genres[active_artist_id], "... +150 puntos" if first_genre_placement else "..."]
 
 func update_carried_record(delta: float) -> void:
 	if not artist_holding or artist_record == null or artist_record.get_parent() != player_camera:
@@ -778,7 +825,7 @@ func _on_artist_returned_to_shelf(record: StaticBody3D, returned_artist_id: int)
 	record.scale = Vector3.ONE
 	record.collision_layer = 1
 	record.collision_mask = 1
-	status_label.text = "%s volvió a su estante. Ya puedes tomar otro disco." % artist_titles[returned_artist_id]
+	status_label.text = "%s quedó en su sección: %s. Ya puedes tomar otro disco." % [artist_titles[returned_artist_id], artist_genres[returned_artist_id]]
 
 func play_return_sound(position: Vector3) -> void:
 	if return_sound_player == null:
@@ -835,10 +882,11 @@ func place_selected(slot_index: int) -> void:
 
 func update_progress() -> void:
 	var completed := placed.count(true)
+	var artist_completed: int = artist_placed.count(true)
 	var percent := completed * 100 / VINYL_COUNT
 	progress_label.text = "%d / %d vinilos — %d%%" % [completed, VINYL_COUNT, percent]
 	if score_label != null:
-		score_label.text = "Puntos: %d" % score
+		score_label.text = "Puntos: %d | Artistas: %d/%d" % [score, artist_completed, artist_placed.size()]
 	for i in cafe_lights.size():
 		var target := 2.4 if i < completed else 0.0
 		var tween: Tween = create_tween()
@@ -892,11 +940,26 @@ func fill_jazz_audio() -> void:
 		audio_time += 1.0 / sample_rate
 
 
-func create_artist_display(artist_id: int, song_title: String, artist_name: String, genre: String, cover_path: String, shelf_position: Vector3) -> StaticBody3D:
-	make_box("ArtistPedestal%d" % artist_id, Vector3(1.8, 1.05, 1.15), shelf_position + Vector3(0, -1.03, -0.07), Color("2b1d18"))
+func create_genre_shelf(genre: String, shelf_position: Vector3, tint: Color) -> void:
+	make_box("GenreShelfBack%s" % genre, Vector3(1.85, 1.65, 0.18), shelf_position + Vector3(0, 0, -0.16), Color("2a1d19"))
+	make_box("GenreShelfBottom%s" % genre, Vector3(1.95, 0.16, 0.42), shelf_position + Vector3(0, -0.78, 0.02), tint)
+	make_box("GenreShelfTop%s" % genre, Vector3(1.95, 0.16, 0.42), shelf_position + Vector3(0, 0.78, 0.02), tint)
+	var side_x_positions: Array[float] = [-0.96, 0.96]
+	for side_x in side_x_positions:
+		make_box("GenreShelfSide%s" % genre, Vector3(0.14, 1.7, 0.42), shelf_position + Vector3(side_x, 0, 0.02), tint)
+	var genre_label := Label3D.new()
+	genre_label.text = genre
+	genre_label.position = shelf_position + Vector3(0, 1.05, 0.02)
+	genre_label.font_size = 24
+	genre_label.modulate = Color("f1c27d")
+	genre_label.outline_size = 5
+	add_child(genre_label)
+
+func create_artist_display(artist_id: int, song_title: String, artist_name: String, genre: String, cover_path: String, shelf_position: Vector3, floor_position: Vector3) -> StaticBody3D:
 	var slot := make_interactive_box("ArtistSlot%d" % artist_id, Vector3(1.35, 1.35, 0.08), shelf_position + Vector3(0, 0, -0.07), Color("1c1512"), "artist_slot", artist_id)
 	artist_slots.append(slot)
-	var record := make_interactive_box("%s — %s" % [song_title, artist_name], Vector3(1.15, 1.15, 0.10), shelf_position, Color("17110f"), "artist_record", artist_id)
+	var record := make_interactive_box("%s — %s" % [song_title, artist_name], Vector3(1.15, 1.15, 0.10), floor_position, Color("17110f"), "artist_record", artist_id)
+	record.rotation = Vector3(deg_to_rad(-90.0), 0.0, deg_to_rad(12.0 + artist_id * 31.0))
 	var front := MeshInstance3D.new()
 	var front_quad := QuadMesh.new()
 	front_quad.size = Vector2(1.15, 1.15)
