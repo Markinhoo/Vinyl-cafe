@@ -68,6 +68,7 @@ var tonearm_rest_angle := PI
 var look_pitch := 0.0
 var sliding_door_left: MeshInstance3D
 var sliding_door_right: MeshInstance3D
+var turntable_model_root: Node3D
 const WALK_SPEED := 4.0
 const MOUSE_SENSITIVITY := 0.0022
 
@@ -301,7 +302,14 @@ func build_world() -> void:
 	amp_display.modulate = Color("8fe69b")
 	amp_display.outline_size = 4
 	add_child(amp_display)
-	var player_body := make_interactive_box("Turntable", Vector3(2.55, 0.27, 1.75), Vector3(2.35, 1.05, 2.65), Color("111317"), "turntable", 0)
+	var player_body := make_interactive_box("Turntable", Vector3(2.55, 0.38, 1.75), Vector3(2.35, 1.08, 2.65), Color("111317"), "turntable", 0)
+	# El GLB sustituye la caja visual; este StaticBody3D conserva una colisión
+	# sencilla y fiable para apuntar, colocar y retirar discos.
+	var placeholder_visual: MeshInstance3D = player_body.get_child(0) as MeshInstance3D
+	if placeholder_visual != null:
+		placeholder_visual.visible = false
+	turntable_model_root = load_turntable_model()
+	# Plato funcional invisible: el modelo aporta el plato visual y el disco se monta encima.
 	# Plato metálico inspirado en tornamesas de DJ.
 	var platter := MeshInstance3D.new()
 	var platter_mesh := CylinderMesh.new()
@@ -316,6 +324,7 @@ func build_world() -> void:
 	platter_material.roughness = 0.24
 	platter.material_override = platter_material
 	add_child(platter)
+	platter.visible = false
 	# Botones cuadrados y luz de encendido en el chasis.
 	make_box("StartStop", Vector3(0.15, 0.025, 0.15), Vector3(1.32, 1.225, 3.07), Color("d8d9d7"))
 	make_box("CueButton", Vector3(0.11, 0.025, 0.08), Vector3(1.55, 1.225, 3.07), Color("a12e2e"))
@@ -1220,6 +1229,23 @@ func create_artist_display(artist_id: int, song_title: String, artist_name: Stri
 	display_label.outline_size = 6
 	add_child(display_label)
 	return record
+
+func load_turntable_model() -> Node3D:
+	var model_scene: PackedScene = load("res://assets/models/audio_technica_turntable_textured.glb") as PackedScene
+	if model_scene == null:
+		push_warning("No se pudo cargar el modelo 3D de la tornamesa.")
+		return null
+	var model_instance: Node3D = model_scene.instantiate() as Node3D
+	if model_instance == null:
+		push_warning("El recurso de la tornamesa no tiene una raíz Node3D.")
+		return null
+	model_instance.name = "AudioTechnicaTurntableModel"
+	# Escala adaptada al mueble y a la zona interactiva existente.
+	model_instance.position = Vector3(2.35, 1.11, 2.65)
+	model_instance.scale = Vector3(1.33, 0.22, 0.96)
+	model_instance.rotation.y = 0.0
+	add_child(model_instance)
+	return model_instance
 
 func make_box(label: String, size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
 	var mesh_instance := MeshInstance3D.new()

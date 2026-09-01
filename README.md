@@ -48,3 +48,9 @@ La tienda incluye una sala principal despejada con cuartos distribuidos alrededo
 
 Cada disco conserva su propia portada, canción y contraportada. Al traerlo en la mano, puedes inspeccionarlo con **R**. La tornamesa admite un solo disco: utiliza **Q** para retirar el actual antes de colocar otro.
 
+## Modelos 3D de la tornamesa
+
+- `assets/models/audio_technica_turntable_textured.glb`: modelo visible usado en el juego.
+- `assets/models/audio_technica_turntable_segmented.glb`: versión segmentada conservada para futuras animaciones o sustitución de piezas.
+- Los archivos `.glb` se administran con Git LFS por su tamaño.
+- La colisión, el vinilo, la portada central, el brazo animado y los controles siguen siendo nodos independientes para conservar la interacción.
