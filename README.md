@@ -39,7 +39,7 @@ La pista incluida es únicamente una demostración sintetizada por código; no c
 
 ## Cuartos de género
 
-La tienda incluye una sala principal despejada con cuartos distribuidos alrededor, no como columnas internas: Rock, Metalcore y Regional Mexicano quedan del lado izquierdo; Metal, Jazz y Rap y Hip Hop en la parte superior; Punk, Reguetón y Pop quedan del lado derecho. Cada cuarto es más amplio, tiene puertas a ras de la pared, paredes bajas con colisión uniforme, techo bajo oscuro y letrero neón. La entrada principal usa una puerta corrediza de vidrio que se abre al acercarte.
+La tienda incluye una sala principal despejada con cuartos distribuidos alrededor, no como columnas internas: Rock, Metalcore y Regional Mexicano quedan del lado izquierdo; Metal, Jazz y Rap y Hip Hop en la parte superior; Punk, Reguetón y Pop quedan del lado derecho. Cada cuarto es más amplio, tiene entradas más altas y anchas a ras de la pared, paredes bajas con colisión uniforme, techo bajo oscuro, letrero neón y repisas de vinilos montadas sobre la pared como tienda de discos. La entrada principal usa una puerta corrediza de vidrio que se abre al acercarte.
 
 ## Artistas independientes incluidos
 
