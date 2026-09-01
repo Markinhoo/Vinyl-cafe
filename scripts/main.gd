@@ -8,10 +8,12 @@ var vinyl_nodes: Array[Node3D] = []
 var slot_nodes: Array[Node3D] = []
 var cafe_lights: Array[OmniLight3D] = []
 var turntable_disc: MeshInstance3D
+var hud_panel: ColorRect
 var progress_label: Label
 var score_label: Label
 var instruction_label: Label
 var status_label: Label
+var crosshair_label: Label
 var intro_panel: ColorRect
 var intro_label: Label
 var intro_elapsed := 0.0
@@ -41,10 +43,10 @@ var active_artist_id := -1
 var turntable_artist_id := -1
 var artist_titles: Array[String] = ["Hoy es diferente", "Abyss 404"]
 var artist_names: Array[String] = ["Abraham HDZ", "9 MONARCA"]
-var artist_genres: Array[String] = ["Regional mexicano", "Independiente"]
+var artist_genres: Array[String] = ["Regional mexicano", "Rap y Hip Hop"]
 var artist_audio_paths: Array[String] = ["res://assets/audio/hoy_es_diferente.mp3", "res://assets/audio/promesa_perdida.mp3"]
 var artist_cover_paths: Array[String] = ["res://assets/covers/hoy_es_diferente.png", "res://assets/covers/promesa_perdida.jpeg"]
-var artist_shelf_positions: Array[Vector3] = [Vector3(-4.45, 1.55, -3.28), Vector3(4.45, 1.55, -3.28)]
+var artist_shelf_positions: Array[Vector3] = [Vector3(2.10, 1.55, -3.28), Vector3(0.55, 1.55, -3.28)]
 var artist_floor_positions: Array[Vector3] = [Vector3(-3.55, 0.08, 0.85), Vector3(3.25, 0.08, 0.95)]
 var amp_volume_db := -6.0
 var rpm_mode := 1
@@ -148,7 +150,11 @@ func build_world() -> void:
 	make_collision_box(Vector3(12, 6, 0.2), Vector3(0, 3, -4.4))
 	make_collision_box(Vector3(0.2, 6, 9), Vector3(-5.9, 3, 0))
 	make_collision_box(Vector3(0.2, 6, 9), Vector3(5.9, 3, 0))
-	make_collision_box(Vector3(12, 6, 0.2), Vector3(0, 3, 5.0))
+	make_collision_box(Vector3(4.2, 6, 0.2), Vector3(-3.9, 3, 5.0))
+	make_collision_box(Vector3(4.2, 6, 0.2), Vector3(3.9, 3, 5.0))
+	make_collision_box(Vector3(12, 1.0, 0.2), Vector3(0, 4.35, 5.0))
+	make_box("ExteriorGround", Vector3(12, 0.2, 7.5), Vector3(0, -0.12, 8.55), Color("151614"))
+	make_collision_box(Vector3(12, 0.2, 7.5), Vector3(0, -0.12, 8.55))
 	# Fachada oscura de entrada con ventanas rotas para la intro.
 	make_box("StorefrontLeft", Vector3(3.15, 3.4, 0.16), Vector3(-4.35, 1.7, 4.86), Color("17110f"))
 	make_box("StorefrontRight", Vector3(3.15, 3.4, 0.16), Vector3(4.35, 1.7, 4.86), Color("17110f"))
@@ -165,16 +171,49 @@ func build_world() -> void:
 		make_box("GlassShardA", Vector3(0.38, 0.04, 0.04), Vector3(window_x - 0.35, 1.82, 4.59), Color("8eb8c7"))
 		make_box("GlassShardB", Vector3(0.28, 0.04, 0.04), Vector3(window_x + 0.42, 2.50, 4.59), Color("8eb8c7"))
 
+	var store_sign := Label3D.new()
+	store_sign.text = "Vinyl-Store"
+	store_sign.position = Vector3(0, 4.45, 4.55)
+	store_sign.font_size = 58
+	store_sign.modulate = Color("ffffff")
+	store_sign.outline_modulate = Color("64f2ff")
+	store_sign.outline_size = 8
+	add_child(store_sign)
+	make_box("BusStopPole", Vector3(0.08, 1.8, 0.08), Vector3(-4.7, 0.85, 7.75), Color("8d8d86"))
+	make_box("BusStopSign", Vector3(0.9, 0.55, 0.08), Vector3(-4.7, 1.85, 7.75), Color("26384d"))
+	var bus_label := Label3D.new()
+	bus_label.text = "BUS"
+	bus_label.position = Vector3(-4.7, 1.88, 7.69)
+	bus_label.font_size = 28
+	bus_label.modulate = Color("dcecff")
+	bus_label.outline_size = 3
+	add_child(bus_label)
+	make_box("BusBench", Vector3(1.5, 0.14, 0.42), Vector3(-4.1, 0.48, 8.45), Color("51311f"))
+	make_box("BusBenchBack", Vector3(1.5, 0.55, 0.12), Vector3(-4.1, 0.78, 8.70), Color("3a251b"))
+
+	# Cuartos/secciones por género con letreros neón.
+	create_genre_room("ROCK", Vector3(-4.7, 1.55, -2.65), Color("d43c3c"))
+	create_genre_room("METAL", Vector3(-3.45, 1.55, -2.65), Color("b7b7c8"))
+	create_genre_room("JAZZ", Vector3(-2.20, 1.55, -2.65), Color("ffb866"))
+	create_genre_room("PUNK", Vector3(-0.95, 1.55, -2.65), Color("9dff38"))
+	create_genre_room("RAP Y HIP HOP", Vector3(0.55, 1.55, -2.65), Color("42d7ff"))
+	create_genre_room("REGIONAL MEXICANO", Vector3(2.10, 1.55, -2.65), Color("ff8c42"))
+	create_genre_room("REGUETON", Vector3(3.65, 1.55, -2.65), Color("ff4edb"))
+	create_genre_room("POP", Vector3(4.85, 1.55, -2.65), Color("ffd84f"))
+
 	# Jazz shelving unit.
-	make_box("ShelfBack", Vector3(5.8, 3.7, 0.25), Vector3(0, 2.15, -3.95), Color("3b2418"))
-	make_box("ShelfTop", Vector3(6.2, 0.22, 0.75), Vector3(0, 4.05, -3.55), Color("6b3f25"))
-	make_box("ShelfBottom", Vector3(6.2, 0.22, 0.75), Vector3(0, 0.25, -3.55), Color("6b3f25"))
-	for x in [-3.0, 3.0]:
-		make_box("ShelfSide", Vector3(0.22, 4, 0.75), Vector3(x, 2.1, -3.55), Color("6b3f25"))
+	make_box("ShelfBack", Vector3(1.15, 1.65, 0.20), Vector3(-2.20, 1.55, -3.30), Color("3b2418"))
+	make_box("ShelfTop", Vector3(1.20, 0.14, 0.45), Vector3(-2.20, 2.32, -3.12), Color("6b3f25"))
+	make_box("ShelfBottom", Vector3(1.20, 0.14, 0.45), Vector3(-2.20, 0.78, -3.12), Color("6b3f25"))
+	var jazz_side_offsets: Array[float] = [-0.62, 0.62]
+	for x_offset in jazz_side_offsets:
+		make_box("ShelfSide", Vector3(0.10, 1.7, 0.45), Vector3(-2.20 + x_offset, 1.55, -3.12), Color("6b3f25"))
 
 	for i in VINYL_COUNT:
-		var x := -2.25 + i * 1.125
-		var slot := make_interactive_box("JazzSlot%d" % i, Vector3(0.82, 1.15, 0.16), Vector3(x, 1.15, -3.31), Color("211917"), "slot", i)
+		var row: int = int(i / 3)
+		var col: int = i % 3
+		var slot_pos: Vector3 = Vector3(-2.57 + col * 0.37, 1.75 - row * 0.48, -3.04)
+		var slot := make_interactive_box("JazzSlot%d" % i, Vector3(0.32, 0.42, 0.12), slot_pos, Color("211917"), "slot", i)
 		slot_nodes.append(slot)
 
 	# Discos de jazz tirados en el suelo al entrar a la cafetería abandonada.
@@ -195,7 +234,7 @@ func build_world() -> void:
 
 	# Estantes de artistas por género, separados y pegados a la pared.
 	create_genre_shelf("REGIONAL MEXICANO", artist_shelf_positions[0], Color("7a4023"))
-	create_genre_shelf("INDEPENDIENTE", artist_shelf_positions[1], Color("253f62"))
+	create_genre_shelf("RAP Y HIP HOP", artist_shelf_positions[1], Color("253f62"))
 
 	# Lanzamientos de artistas independientes, también tirados en el suelo al inicio.
 	for artist_id in artist_titles.size():
@@ -387,14 +426,15 @@ func build_world() -> void:
 func build_ui() -> void:
 	var layer := CanvasLayer.new()
 	add_child(layer)
-	var panel := ColorRect.new()
-	panel.color = Color(0.04, 0.025, 0.02, 0.86)
-	panel.position = Vector2(24, 22)
-	panel.size = Vector2(460, 174)
-	layer.add_child(panel)
+	hud_panel = ColorRect.new()
+	hud_panel.color = Color(0.04, 0.025, 0.02, 0.86)
+	hud_panel.position = Vector2(24, 22)
+	hud_panel.size = Vector2(460, 174)
+	layer.add_child(hud_panel)
+	var panel := hud_panel
 
 	var title := Label.new()
-	title.text = "SECCIÓN DE JAZZ"
+	title.text = "VINYL-STORE"
 	title.position = Vector2(22, 14)
 	title.add_theme_font_size_override("font_size", 24)
 	panel.add_child(title)
@@ -420,32 +460,31 @@ func build_ui() -> void:
 	instruction_label.position = Vector2(24, 670)
 	instruction_label.add_theme_font_size_override("font_size", 16)
 	layer.add_child(instruction_label)
-	var crosshair := Label.new()
-	crosshair.text = "+"
-	crosshair.set_anchors_preset(Control.PRESET_CENTER)
-	crosshair.position = Vector2(-7, -14)
-	crosshair.add_theme_font_size_override("font_size", 24)
-	layer.add_child(crosshair)
+	crosshair_label = Label.new()
+	crosshair_label.text = "+"
+	crosshair_label.set_anchors_preset(Control.PRESET_CENTER)
+	crosshair_label.position = Vector2(-7, -14)
+	crosshair_label.add_theme_font_size_override("font_size", 24)
+	layer.add_child(crosshair_label)
 
 	intro_panel = ColorRect.new()
-	intro_panel.color = Color(0.02, 0.015, 0.012, 0.28)
-	intro_panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	intro_panel.color = Color(0.0, 0.0, 0.0, 0.0)
+	intro_panel.visible = false
 	layer.add_child(intro_panel)
 	intro_label = Label.new()
-	intro_label.text = "Llegas a una cafetería abandonada.\nLas ventanas están rotas y los discos quedaron tirados.\nEntra, separa cada disco por género y revive el lugar."
-	intro_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	intro_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	intro_label.set_anchors_preset(Control.PRESET_FULL_RECT)
-	intro_label.add_theme_font_size_override("font_size", 30)
-	intro_label.add_theme_color_override("font_color", Color("f1c27d"))
+	intro_label.text = ""
+	intro_label.visible = false
 	intro_panel.add_child(intro_label)
 
 func start_intro() -> void:
 	intro_active = true
 	intro_elapsed = 0.0
-	if intro_panel != null:
-		intro_panel.visible = true
-		intro_panel.modulate.a = 1.0
+	if hud_panel != null:
+		hud_panel.visible = false
+	if instruction_label != null:
+		instruction_label.visible = false
+	if crosshair_label != null:
+		crosshair_label.visible = false
 	if player != null:
 		player.position = Vector3(0, 1.0, 6.20)
 		player.rotation = Vector3.ZERO
@@ -454,7 +493,7 @@ func start_intro() -> void:
 		player_camera.rotation.x = look_pitch
 	intro_walk_tween = create_tween()
 	intro_walk_tween.tween_property(player, "position", Vector3(0, 1.0, 3.35), 4.0).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
-	status_label.text = "Entra, recoge los discos del suelo y ordénalos por género."
+	status_label.text = ""
 
 func update_intro(delta: float) -> void:
 	if not intro_active:
@@ -468,12 +507,13 @@ func update_intro(delta: float) -> void:
 	if player_camera != null:
 		player_camera.position.y = 1.35
 	intro_active = false
-	if intro_panel != null:
-		var tween: Tween = create_tween()
-		tween.tween_property(intro_panel, "modulate:a", 0.0, 0.9)
-		tween.finished.connect(func() -> void:
-			intro_panel.visible = false
-		)
+	if hud_panel != null:
+		hud_panel.visible = true
+	if instruction_label != null:
+		instruction_label.visible = true
+	if crosshair_label != null:
+		crosshair_label.visible = true
+	status_label.text = "Encuentra los discos tirados y llévalos a su cuarto por género."
 
 func _unhandled_input(event: InputEvent) -> void:
 	if intro_active and not (event is InputEventKey and event.pressed and event.physical_keycode == KEY_ESCAPE):
@@ -939,6 +979,26 @@ func fill_jazz_audio() -> void:
 		audio_playback.push_frame(Vector2(mixed, mixed))
 		audio_time += 1.0 / sample_rate
 
+
+func create_genre_room(genre: String, sign_position: Vector3, neon_color: Color) -> void:
+	var room_floor_position: Vector3 = Vector3(sign_position.x, 0.01, sign_position.z + 0.35)
+	make_box("RoomFloor%s" % genre, Vector3(1.12, 0.025, 1.35), room_floor_position, Color("1c1718"))
+	make_box("RoomDividerL%s" % genre, Vector3(0.045, 1.35, 1.05), sign_position + Vector3(-0.62, -0.45, 0.15), Color("302421"))
+	make_box("RoomDividerR%s" % genre, Vector3(0.045, 1.35, 1.05), sign_position + Vector3(0.62, -0.45, 0.15), Color("302421"))
+	var sign := Label3D.new()
+	sign.text = genre
+	sign.position = sign_position
+	sign.font_size = 21
+	sign.modulate = neon_color
+	sign.outline_modulate = Color("101010")
+	sign.outline_size = 6
+	add_child(sign)
+	var glow := OmniLight3D.new()
+	glow.position = sign_position + Vector3(0, 0.05, 0.25)
+	glow.light_color = neon_color
+	glow.light_energy = 0.6
+	glow.omni_range = 1.5
+	add_child(glow)
 
 func create_genre_shelf(genre: String, shelf_position: Vector3, tint: Color) -> void:
 	make_box("GenreShelfBack%s" % genre, Vector3(1.85, 1.65, 0.18), shelf_position + Vector3(0, 0, -0.16), Color("2a1d19"))

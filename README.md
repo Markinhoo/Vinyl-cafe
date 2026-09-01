@@ -1,6 +1,6 @@
 # Vinyl Café — prototipo de jazz
 
-Prototipo jugable para Godot 4. Incluye una intro corta caminando hacia una cafetería abandonada con ventanas rotas, vinilos tirados en el suelo, puntos por acomodarlos, estantes por género, una tornamesa con música y restauración gradual de las luces.
+Prototipo jugable para Godot 4. Incluye una intro sin textos caminando desde una parada de camión hacia Vinyl-Store, una tienda abandonada con ventanas rotas, vinilos tirados en el suelo, puntos por acomodarlos, cuartos por género con letreros neón, una tornamesa con música y restauración gradual de las luces.
 
 ## Ejecutar
 
@@ -11,7 +11,7 @@ Prototipo jugable para Godot 4. Incluye una intro corta caminando hacia una cafe
 
 ## Controles
 
-- Usa **WASD** para caminar y el **ratón** para mirar.
+- Usa **WASD** para caminar y el **ratón** para mirar. Puedes salir y volver a entrar por la puerta principal.
 - Pulsa **Q** mirando una funda de artista tirada en el suelo para tomar ese disco.
 - Con un disco en la mano, pulsa **R** para alternar entre portada y contraportada.
 - Con un disco en la mano, pulsa **Q** mirando la tornamesa para ponerlo.
@@ -21,7 +21,7 @@ Prototipo jugable para Godot 4. Incluye una intro corta caminando hacia una cafe
 - Pulsa **F** para prender o apagar la linterna.
 - Pulsa **Esc** para liberar el cursor; haz clic en la ventana para capturarlo otra vez.
 - Los cinco discos de jazz empiezan tirados en el suelo y deben colocarse de izquierda a derecha en su estante correcto. Cada acierto suma 100 puntos.
-- Los discos de artistas también empiezan tirados; Abraham HDZ va en Regional Mexicano y 9 MONARCA va en Independiente. Cada artista acomodado suma 150 puntos.
+- Los discos de artistas también empiezan tirados; Abraham HDZ va en Regional Mexicano y 9 MONARCA va en Rap y Hip Hop. Cada artista acomodado suma 150 puntos.
 
 La pista incluida es únicamente una demostración sintetizada por código; no contiene música comercial ni material con derechos de terceros.
 
@@ -36,6 +36,10 @@ La pista incluida es únicamente una demostración sintetizada por código; no c
 - Mantén clic izquierdo sobre el fader frontal derecho y arrastra horizontalmente para controlar el volumen.
 - Usa los botones frontales izquierdos para seleccionar 45 RPM (lenta), 33⅓ RPM (normal) o 78 RPM (rápida).
 
+
+## Cuartos de género
+
+La tienda incluye secciones con letrero neón para Rock, Metal, Jazz, Punk, Rap y Hip Hop, Regional Mexicano, Reguetón y Pop.
 
 ## Artistas independientes incluidos
 
