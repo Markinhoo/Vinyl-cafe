@@ -53,4 +53,4 @@ Cada disco conserva su propia portada, canción y contraportada. Al traerlo en l
 - `assets/models/audio_technica_turntable_textured.glb`: modelo visible usado en el juego.
 - `assets/models/audio_technica_turntable_segmented.glb`: versión segmentada conservada para futuras animaciones o sustitución de piezas.
 - Los archivos `.glb` se administran con Git LFS por su tamaño.
-- La colisión, el vinilo, la portada central, el brazo animado y los controles siguen siendo nodos independientes para conservar la interacción.
+- La colisión, el vinilo, la portada central y los controles siguen siendo nodos independientes. El brazo animado utiliza `model_part3` del GLB segmentado y avanza hacia el centro según la reproducción.

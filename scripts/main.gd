@@ -62,9 +62,9 @@ var turntable_art_material: StandardMaterial3D
 var spectrum_analyzer: AudioEffectSpectrumAnalyzerInstance
 var music_bus_index := -1
 var led_columns: Array = []
-var tonearm_start_angle := 2.52
-var tonearm_center_angle := 2.16
-var tonearm_rest_angle := PI
+var tonearm_start_angle := 0.06
+var tonearm_center_angle := -0.20
+var tonearm_rest_angle := 0.34
 var look_pitch := 0.0
 var sliding_door_left: MeshInstance3D
 var sliding_door_right: MeshInstance3D
@@ -283,15 +283,15 @@ func build_world() -> void:
 	# Amplificador con faders arrastrables, como una pequeña mezcladora.
 	make_box("Amplifier", Vector3(2.35, 0.72, 0.18), Vector3(2.35, 0.48, 3.75), Color("181715"))
 	# Volumen a la derecha, integrado en la superficie de la tornamesa.
-	make_box("VolumeTrack", Vector3(0.68, 0.025, 0.055), Vector3(2.72, 1.225, 3.43), Color("3e4146"))
-	volume_fader = make_interactive_box("VolumeFader", Vector3(0.13, 0.055, 0.22), Vector3(2.72, 1.265, 3.43), Color("d7d9da"), "fader_volume", 0)
+	make_box("VolumeTrack", Vector3(0.68, 0.025, 0.055), Vector3(2.72, 1.865, 3.43), Color("3e4146"))
+	volume_fader = make_interactive_box("VolumeFader", Vector3(0.13, 0.055, 0.22), Vector3(2.72, 1.905, 3.43), Color("d7d9da"), "fader_volume", 0)
 	# RPM a la izquierda mediante tres botones pequeños.
-	make_interactive_box("RPM45", Vector3(0.18, 0.045, 0.12), Vector3(1.32, 1.265, 3.43), Color("82705c"), "rpm_45", 0)
-	make_interactive_box("RPM33", Vector3(0.18, 0.045, 0.12), Vector3(1.57, 1.265, 3.43), Color("d5b16d"), "rpm_33", 0)
-	make_interactive_box("RPM78", Vector3(0.18, 0.045, 0.12), Vector3(1.82, 1.265, 3.43), Color("82705c"), "rpm_78", 0)
+	make_interactive_box("RPM45", Vector3(0.18, 0.045, 0.12), Vector3(1.32, 1.905, 3.43), Color("82705c"), "rpm_45", 0)
+	make_interactive_box("RPM33", Vector3(0.18, 0.045, 0.12), Vector3(1.57, 1.905, 3.43), Color("d5b16d"), "rpm_33", 0)
+	make_interactive_box("RPM78", Vector3(0.18, 0.045, 0.12), Vector3(1.82, 1.905, 3.43), Color("82705c"), "rpm_78", 0)
 	var amp_controls := Label3D.new()
 	amp_controls.text = "45     33⅓     78                 VOLUMEN"
-	amp_controls.position = Vector3(2.08, 1.34, 3.49)
+	amp_controls.position = Vector3(2.08, 1.98, 3.49)
 	amp_controls.font_size = 18
 	amp_controls.modulate = Color("e7c691")
 	amp_controls.outline_size = 4
@@ -302,7 +302,7 @@ func build_world() -> void:
 	amp_display.modulate = Color("8fe69b")
 	amp_display.outline_size = 4
 	add_child(amp_display)
-	var player_body := make_interactive_box("Turntable", Vector3(2.55, 0.38, 1.75), Vector3(2.35, 1.08, 2.65), Color("111317"), "turntable", 0)
+	var player_body := make_interactive_box("Turntable", Vector3(2.30, 1.02, 2.05), Vector3(2.35, 1.41, 2.65), Color("111317"), "turntable", 0)
 	# El GLB sustituye la caja visual; este StaticBody3D conserva una colisión
 	# sencilla y fiable para apuntar, colocar y retirar discos.
 	var placeholder_visual: MeshInstance3D = player_body.get_child(0) as MeshInstance3D
@@ -326,10 +326,10 @@ func build_world() -> void:
 	add_child(platter)
 	platter.visible = false
 	# Botones cuadrados y luz de encendido en el chasis.
-	make_box("StartStop", Vector3(0.15, 0.025, 0.15), Vector3(1.32, 1.225, 3.07), Color("d8d9d7"))
-	make_box("CueButton", Vector3(0.11, 0.025, 0.08), Vector3(1.55, 1.225, 3.07), Color("a12e2e"))
+	make_box("StartStop", Vector3(0.15, 0.025, 0.15), Vector3(1.32, 1.865, 3.07), Color("d8d9d7"))
+	make_box("CueButton", Vector3(0.11, 0.025, 0.08), Vector3(1.55, 1.865, 3.07), Color("a12e2e"))
 	var power_led := OmniLight3D.new()
-	power_led.position = Vector3(1.65, 1.25, 3.28)
+	power_led.position = Vector3(1.65, 1.89, 3.28)
 	power_led.light_color = Color("ff3c31")
 	power_led.light_energy = 0.7
 	power_led.omni_range = 0.45
@@ -341,7 +341,7 @@ func build_world() -> void:
 	disc_mesh.height = 0.035
 	disc_mesh.radial_segments = 96
 	turntable_disc.mesh = disc_mesh
-	turntable_disc.position = Vector3(2.15, 1.27, 2.63)
+	turntable_disc.position = Vector3(2.15, 1.92, 2.63)
 	var vinyl_material := material(Color("09090c"))
 	vinyl_material.metallic = 0.72
 	vinyl_material.roughness = 0.28
@@ -387,46 +387,8 @@ func build_world() -> void:
 	label_art.material_override = label_art_material
 	turntable_art_material = label_art_material
 	turntable_disc.add_child(label_art)
-	# Brazo con pivote: descansa a la derecha y entra suavemente al borde.
-	var arm_base := MeshInstance3D.new()
-	var arm_base_mesh := CylinderMesh.new()
-	arm_base_mesh.top_radius = 0.22
-	arm_base_mesh.bottom_radius = 0.24
-	arm_base_mesh.height = 0.16
-	arm_base_mesh.radial_segments = 48
-	arm_base.mesh = arm_base_mesh
-	arm_base.position = Vector3(3.28, 1.25, 1.97)
-	arm_base.material_override = material(Color("24262a"))
-	add_child(arm_base)
-	tonearm_pivot = Node3D.new()
-	tonearm_pivot.position = Vector3(3.28, 1.36, 1.97)
-	tonearm_pivot.rotation.y = tonearm_rest_angle
-	add_child(tonearm_pivot)
-	var tonearm := MeshInstance3D.new()
-	var arm_mesh := BoxMesh.new()
-	arm_mesh.size = Vector3(0.075, 0.075, 1.10)
-	tonearm.mesh = arm_mesh
-	tonearm.position = Vector3(0, 0, -0.52)
-	tonearm.material_override = material(Color("c4aa75"))
-	tonearm_pivot.add_child(tonearm)
-	var needle := MeshInstance3D.new()
-	var needle_mesh := BoxMesh.new()
-	needle_mesh.size = Vector3(0.14, 0.10, 0.16)
-	needle.mesh = needle_mesh
-	needle.position = Vector3(0, -0.025, -1.07)
-	needle.material_override = material(Color("272321"))
-	tonearm_pivot.add_child(needle)
-	var counterweight := MeshInstance3D.new()
-	var weight_mesh := CylinderMesh.new()
-	weight_mesh.top_radius = 0.12
-	weight_mesh.bottom_radius = 0.12
-	weight_mesh.height = 0.20
-	weight_mesh.radial_segments = 32
-	counterweight.mesh = weight_mesh
-	counterweight.rotation = Vector3(PI * 0.5, 0, 0)
-	counterweight.position = Vector3(0, 0, 0.10)
-	counterweight.material_override = material(Color("34363b"))
-	tonearm_pivot.add_child(counterweight)
+	# El brazo real proviene de model_part3 en el GLB segmentado.
+	tonearm_pivot = load_segmented_tonearm()
 
 	audio_player = AudioStreamPlayer3D.new()
 	audio_player.position = player_body.position
@@ -1239,13 +1201,56 @@ func load_turntable_model() -> Node3D:
 	if model_instance == null:
 		push_warning("El recurso de la tornamesa no tiene una raíz Node3D.")
 		return null
+	var model_mount := Node3D.new()
+	model_mount.name = "AudioTechnicaTurntableMount"
+	# El archivo viene inclinado. Primero se corrige la inclinación del hijo y
+	# después el soporte adapta su altura, sin deformar sus ejes de profundidad.
+	model_mount.position = Vector3(2.35, 1.485, 2.65)
+	model_mount.scale = Vector3(1.05, 0.62, 1.05)
 	model_instance.name = "AudioTechnicaTurntableModel"
-	# Escala adaptada al mueble y a la zona interactiva existente.
-	model_instance.position = Vector3(2.35, 1.11, 2.65)
-	model_instance.scale = Vector3(1.33, 0.22, 0.96)
-	model_instance.rotation.y = 0.0
-	add_child(model_instance)
-	return model_instance
+	model_instance.rotation.x = deg_to_rad(-32.1)
+	model_mount.add_child(model_instance)
+	add_child(model_mount)
+	return model_mount
+
+func load_segmented_tonearm() -> Node3D:
+	var pivot := Node3D.new()
+	pivot.name = "SegmentedTonearmPivot"
+	pivot.position = Vector3(3.25, 1.93, 2.03)
+	pivot.rotation.y = tonearm_rest_angle
+	add_child(pivot)
+	var segmented_scene: PackedScene = load("res://assets/models/audio_technica_turntable_segmented.glb") as PackedScene
+	if segmented_scene == null:
+		push_warning("No se pudo cargar el modelo segmentado de la tornamesa.")
+		return pivot
+	var segmented_instance: Node3D = segmented_scene.instantiate() as Node3D
+	if segmented_instance == null:
+		return pivot
+	var arm_part: Node3D = segmented_instance.get_node_or_null("model_part3") as Node3D
+	if arm_part == null:
+		push_warning("No se encontró model_part3, la pieza del brazo segmentado.")
+		segmented_instance.queue_free()
+		return pivot
+	segmented_instance.remove_child(arm_part)
+	# model_part3 usa coordenadas cuantizadas; se normaliza alrededor de su base.
+	var arm_scale: float = 0.000105
+	arm_part.position = Vector3(-15200.0, -3066.0, -3562.0) * arm_scale
+	arm_part.scale = Vector3.ONE * arm_scale
+	apply_tonearm_material(arm_part)
+	pivot.add_child(arm_part)
+	segmented_instance.queue_free()
+	return pivot
+
+func apply_tonearm_material(node: Node) -> void:
+	if node is MeshInstance3D:
+		var mesh_node: MeshInstance3D = node as MeshInstance3D
+		var arm_material := StandardMaterial3D.new()
+		arm_material.albedo_color = Color("b7bcc2")
+		arm_material.metallic = 0.82
+		arm_material.roughness = 0.24
+		mesh_node.material_override = arm_material
+	for child_node: Node in node.get_children():
+		apply_tonearm_material(child_node)
 
 func make_box(label: String, size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
 	var mesh_instance := MeshInstance3D.new()
