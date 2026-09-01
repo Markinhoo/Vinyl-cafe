@@ -39,7 +39,7 @@ La pista incluida es únicamente una demostración sintetizada por código; no c
 ## Artistas independientes incluidos
 
 - Abraham HDZ — **Hoy es diferente**
-- 9 MONARCA — **Promesa perdida**
+- 9 MONARCA — **Abyss 404**
 
 Cada disco conserva su propia portada, canción y contraportada. Al traerlo en la mano, puedes inspeccionarlo con **R**. La tornamesa admite un solo disco: utiliza **Q** para retirar el actual antes de colocar otro.
 
