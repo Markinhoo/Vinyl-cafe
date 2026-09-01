@@ -1,6 +1,6 @@
 # Vinyl Café — prototipo de jazz
 
-Prototipo jugable para Godot 4. Incluye una intro sin textos caminando desde una parada de camión hacia Vinyl-Store, una tienda abandonada con ventanas rotas, calle exterior amplia con banqueta, parada de camión, árboles al fondo y cielo de noche, vinilos tirados en el suelo, puntos por acomodarlos, sala principal despejada con cuartos reales alrededor al estilo croquis arquitectónico y letreros neón, una tornamesa con música y restauración gradual de las luces.
+Prototipo jugable para Godot 4. Incluye una intro sin textos caminando desde una parada de camión hacia Vinyl-Store, una tienda abandonada con ventanas rotas, calle exterior amplia con banqueta, parada de camión, árboles al fondo y cielo de noche, vinilos tirados en el suelo, puntos por acomodarlos, sala principal despejada con cuartos grandes alrededor al estilo croquis arquitectónico, puertas a ras de pared y letreros neón, una tornamesa con música y restauración gradual de las luces.
 
 ## Ejecutar
 
@@ -39,7 +39,7 @@ La pista incluida es únicamente una demostración sintetizada por código; no c
 
 ## Cuartos de género
 
-La tienda incluye una sala principal despejada con cuartos distribuidos alrededor, no como columnas internas: Rock, Metalcore, Punk y Regional Mexicano quedan del lado izquierdo; Metal, Jazz, Rap y Hip Hop y Reguetón en la parte superior; Pop en el lateral derecho. Cada cuarto tiene puertas visibles, paredes con colisión y letrero neón.
+La tienda incluye una sala principal despejada con cuartos distribuidos alrededor, no como columnas internas: Rock, Metalcore y Regional Mexicano quedan del lado izquierdo; Metal, Jazz y Rap y Hip Hop en la parte superior; Punk, Reguetón y Pop quedan del lado derecho. Cada cuarto es más amplio, tiene puertas a ras de la pared, paredes bajas con colisión uniforme, techo bajo oscuro y letrero neón. La entrada principal usa una puerta corrediza de vidrio que se abre al acercarte.
 
 ## Artistas independientes incluidos
 

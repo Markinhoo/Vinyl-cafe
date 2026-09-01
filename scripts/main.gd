@@ -46,7 +46,7 @@ var artist_names: Array[String] = ["Abraham HDZ", "9 MONARCA"]
 var artist_genres: Array[String] = ["Regional mexicano", "Metalcore"]
 var artist_audio_paths: Array[String] = ["res://assets/audio/hoy_es_diferente.mp3", "res://assets/audio/promesa_perdida.mp3"]
 var artist_cover_paths: Array[String] = ["res://assets/covers/hoy_es_diferente.png", "res://assets/covers/promesa_perdida.jpeg"]
-var artist_shelf_positions: Array[Vector3] = [Vector3(-5.35, 1.55, -2.10), Vector3(-5.35, 1.55, 1.10)]
+var artist_shelf_positions: Array[Vector3] = [Vector3(-6.05, 1.35, -1.75), Vector3(-6.05, 1.35, 0.45)]
 var artist_floor_positions: Array[Vector3] = [Vector3(0.45, 0.08, -1.20), Vector3(-0.45, 0.08, 2.05)]
 var amp_volume_db := -6.0
 var rpm_mode := 1
@@ -66,6 +66,8 @@ var tonearm_start_angle := 2.52
 var tonearm_center_angle := 2.16
 var tonearm_rest_angle := PI
 var look_pitch := 0.0
+var sliding_door_left: MeshInstance3D
+var sliding_door_right: MeshInstance3D
 const WALK_SPEED := 4.0
 const MOUSE_SENSITIVITY := 0.0022
 
@@ -78,6 +80,7 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	update_intro(delta)
+	update_sliding_door(delta)
 	if record_spinning:
 		turntable_disc.rotate_y(delta * TAU * get_playback_multiplier())
 		fill_jazz_audio()
@@ -143,17 +146,18 @@ func build_world() -> void:
 	player_camera.add_child(flashlight)
 	add_child(player)
 
-	make_box("Floor", Vector3(16, 0.2, 13), Vector3(0, -0.1, -1.5), Color("241b18"))
-	make_box("BackWall", Vector3(16, 6, 0.2), Vector3(0, 3, -8.0), Color("31231f"))
-	make_box("LeftWall", Vector3(0.2, 6, 13), Vector3(-7.65, 3, -1.5), Color("291e1b"))
-	make_box("RightWall", Vector3(0.2, 6, 13), Vector3(7.65, 3, -1.5), Color("291e1b"))
-	make_collision_box(Vector3(16, 0.2, 13), Vector3(0, -0.1, -1.5))
-	make_collision_box(Vector3(16, 6, 0.2), Vector3(0, 3, -8.0))
-	make_collision_box(Vector3(0.2, 6, 13), Vector3(-7.65, 3, -1.5))
-	make_collision_box(Vector3(0.2, 6, 13), Vector3(7.65, 3, -1.5))
-	make_collision_box(Vector3(4.2, 6, 0.2), Vector3(-3.9, 3, 5.0))
-	make_collision_box(Vector3(4.2, 6, 0.2), Vector3(3.9, 3, 5.0))
-	make_collision_box(Vector3(12, 1.0, 0.2), Vector3(0, 4.35, 5.0))
+	make_box("Floor", Vector3(19, 0.2, 15.5), Vector3(0, -0.1, -1.75), Color("241b18"))
+	make_box("BackWall", Vector3(19, 3.2, 0.2), Vector3(0, 1.6, -9.35), Color("31231f"))
+	make_box("LeftWall", Vector3(0.2, 3.2, 15.5), Vector3(-9.25, 1.6, -1.75), Color("291e1b"))
+	make_box("RightWall", Vector3(0.2, 3.2, 15.5), Vector3(9.25, 1.6, -1.75), Color("291e1b"))
+	make_box("LowCeiling", Vector3(19, 0.12, 15.5), Vector3(0, 2.82, -1.75), Color("07070b"))
+	make_collision_box(Vector3(19, 0.2, 15.5), Vector3(0, -0.1, -1.75))
+	make_collision_box(Vector3(19, 3.2, 0.2), Vector3(0, 1.6, -9.35))
+	make_collision_box(Vector3(0.2, 3.2, 15.5), Vector3(-9.25, 1.6, -1.75))
+	make_collision_box(Vector3(0.2, 3.2, 15.5), Vector3(9.25, 1.6, -1.75))
+	make_collision_box(Vector3(5.7, 3.2, 0.2), Vector3(-4.65, 1.6, 5.0))
+	make_collision_box(Vector3(5.7, 3.2, 0.2), Vector3(4.65, 1.6, 5.0))
+	make_collision_box(Vector3(19, 0.45, 0.2), Vector3(0, 3.08, 5.0))
 	make_box("ExteriorGround", Vector3(18, 0.2, 9.5), Vector3(0, -0.12, 9.15), Color("151614"))
 	make_collision_box(Vector3(18, 0.2, 9.5), Vector3(0, -0.12, 9.15))
 	make_box("StreetAsphalt", Vector3(18, 0.04, 4.2), Vector3(0, 0.02, 10.65), Color("0d0f10"))
@@ -165,13 +169,23 @@ func build_world() -> void:
 	for tree_x in tree_x_positions:
 		create_tree(Vector3(tree_x, 0.0, 12.45))
 	# Fachada oscura de entrada con ventanas rotas para la intro.
-	make_box("StorefrontLeft", Vector3(3.15, 3.4, 0.16), Vector3(-4.35, 1.7, 4.86), Color("17110f"))
-	make_box("StorefrontRight", Vector3(3.15, 3.4, 0.16), Vector3(4.35, 1.7, 4.86), Color("17110f"))
-	make_box("StorefrontTop", Vector3(12.0, 1.05, 0.16), Vector3(0, 3.95, 4.86), Color("1f1715"))
-	make_box("DoorFrameTop", Vector3(2.55, 0.18, 0.22), Vector3(0, 2.95, 4.76), Color("4a2c1d"))
+	make_box("StorefrontLeft", Vector3(5.95, 3.0, 0.16), Vector3(-5.55, 1.5, 4.86), Color("17110f"))
+	make_box("StorefrontRight", Vector3(5.95, 3.0, 0.16), Vector3(5.55, 1.5, 4.86), Color("17110f"))
+	make_box("StorefrontTop", Vector3(19.0, 0.65, 0.16), Vector3(0, 3.18, 4.86), Color("1f1715"))
+	make_box("SlidingDoorHeader", Vector3(2.85, 0.16, 0.20), Vector3(0, 2.62, 4.72), Color("5b666b"))
 	var door_x_positions: Array[float] = [-1.35, 1.35]
 	for door_x in door_x_positions:
-		make_box("DoorFrameSide", Vector3(0.16, 3.0, 0.22), Vector3(door_x, 1.5, 4.76), Color("4a2c1d"))
+		make_box("SlidingDoorSide", Vector3(0.10, 2.45, 0.20), Vector3(door_x, 1.25, 4.72), Color("5b666b"))
+	var glass_material := StandardMaterial3D.new()
+	glass_material.albedo_color = Color(0.70, 0.90, 1.0, 0.34)
+	glass_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	glass_material.roughness = 0.08
+	sliding_door_left = make_box("SlidingGlassLeft", Vector3(0.82, 2.18, 0.045), Vector3(-0.43, 1.18, 4.62), Color("9fdfff"))
+	sliding_door_left.material_override = glass_material
+	sliding_door_right = make_box("SlidingGlassRight", Vector3(0.82, 2.18, 0.045), Vector3(0.43, 1.18, 4.60), Color("9fdfff"))
+	sliding_door_right.material_override = glass_material.duplicate()
+	make_box("SlidingDoorRail", Vector3(2.65, 0.04, 0.08), Vector3(0, 2.35, 4.58), Color("c9d6d8"))
+
 	var window_x_positions: Array[float] = [-4.35, 4.35]
 	for window_x in window_x_positions:
 		make_box("BrokenWindow", Vector3(1.45, 0.9, 0.05), Vector3(window_x, 2.18, 4.68), Color("0b1114"))
@@ -202,30 +216,30 @@ func build_world() -> void:
 	create_night_sky()
 
 	# Sala principal con cuartos verdaderos alrededor y letreros neón.
-	make_box("MainRoomFloor", Vector3(7.4, 0.03, 8.9), Vector3(0, 0.04, 0.35), Color("2a2420"))
-	make_box("MainRoomRug", Vector3(4.2, 0.025, 3.1), Vector3(0, 0.075, 0.55), Color("3a252b"))
-	create_side_genre_room("ROCK", -1, 2.70, Color("d43c3c"))
-	create_side_genre_room("METALCORE", -1, 1.10, Color("7e6bff"))
-	create_side_genre_room("PUNK", -1, -0.50, Color("9dff38"))
-	create_side_genre_room("REGIONAL MEXICANO", -1, -2.10, Color("ff8c42"))
-	create_top_genre_room("METAL", -2.70, Color("b7b7c8"))
-	create_top_genre_room("JAZZ", -0.90, Color("ffb866"))
-	create_top_genre_room("RAP Y HIP HOP", 0.90, Color("42d7ff"))
-	create_top_genre_room("REGUETON", 2.70, Color("ff4edb"))
-	create_side_genre_room("POP", 1, 0.35, Color("ffd84f"))
+	make_box("MainRoomFloor", Vector3(8.8, 0.03, 8.9), Vector3(0, 0.04, 0.35), Color("2a2420"))
+	make_box("MainRoomRug", Vector3(4.8, 0.025, 3.2), Vector3(0, 0.075, 0.70), Color("3a252b"))
+	create_side_genre_room("ROCK", -1, 2.65, Color("d43c3c"))
+	create_side_genre_room("METALCORE", -1, 0.45, Color("7e6bff"))
+	create_side_genre_room("REGIONAL MEXICANO", -1, -1.75, Color("ff8c42"))
+	create_top_genre_room("METAL", -2.85, Color("b7b7c8"))
+	create_top_genre_room("JAZZ", 0.0, Color("ffb866"))
+	create_top_genre_room("RAP Y HIP HOP", 2.85, Color("42d7ff"))
+	create_side_genre_room("PUNK", 1, 2.65, Color("9dff38"))
+	create_side_genre_room("REGUETON", 1, 0.45, Color("ff4edb"))
+	create_side_genre_room("POP", 1, -1.75, Color("ffd84f"))
 
 	# Estante de jazz dentro de su cuarto.
-	make_box("ShelfBack", Vector3(1.15, 1.65, 0.20), Vector3(-0.90, 1.55, -5.55), Color("3b2418"))
-	make_box("ShelfTop", Vector3(1.20, 0.14, 0.45), Vector3(-0.90, 2.32, -5.37), Color("6b3f25"))
-	make_box("ShelfBottom", Vector3(1.20, 0.14, 0.45), Vector3(-0.90, 0.78, -5.37), Color("6b3f25"))
+	make_box("ShelfBack", Vector3(1.15, 1.65, 0.20), Vector3(0.0, 1.35, -6.05), Color("3b2418"))
+	make_box("ShelfTop", Vector3(1.20, 0.14, 0.45), Vector3(0.0, 2.12, -5.87), Color("6b3f25"))
+	make_box("ShelfBottom", Vector3(1.20, 0.14, 0.45), Vector3(0.0, 0.58, -5.87), Color("6b3f25"))
 	var jazz_side_offsets: Array[float] = [-0.62, 0.62]
 	for x_offset in jazz_side_offsets:
-		make_box("ShelfSide", Vector3(0.10, 1.7, 0.45), Vector3(-0.90 + x_offset, 1.55, -5.37), Color("6b3f25"))
+		make_box("ShelfSide", Vector3(0.10, 1.7, 0.45), Vector3(0.0 + x_offset, 1.35, -5.87), Color("6b3f25"))
 
 	for i in VINYL_COUNT:
 		var row: int = int(i / 3)
 		var col: int = i % 3
-		var slot_pos: Vector3 = Vector3(-1.27 + col * 0.37, 1.75 - row * 0.48, -5.29)
+		var slot_pos: Vector3 = Vector3(-0.37 + col * 0.37, 1.55 - row * 0.48, -5.79)
 		var slot := make_interactive_box("JazzSlot%d" % i, Vector3(0.32, 0.42, 0.12), slot_pos, Color("211917"), "slot", i)
 		slot_nodes.append(slot)
 
@@ -264,30 +278,30 @@ func build_world() -> void:
 	artist_record = artist_records[0]
 
 	# Turntable table and player.
-	make_box("TurntableStand", Vector3(2.8, 0.9, 2.1), Vector3(4.15, 0.45, 1.2), Color("34231d"))
+	make_box("TurntableStand", Vector3(2.8, 0.9, 2.1), Vector3(2.35, 0.45, 2.65), Color("34231d"))
 	# Amplificador con faders arrastrables, como una pequeña mezcladora.
-	make_box("Amplifier", Vector3(2.35, 0.72, 0.18), Vector3(4.15, 0.48, 2.30), Color("181715"))
+	make_box("Amplifier", Vector3(2.35, 0.72, 0.18), Vector3(2.35, 0.48, 3.75), Color("181715"))
 	# Volumen a la derecha, integrado en la superficie de la tornamesa.
-	make_box("VolumeTrack", Vector3(0.68, 0.025, 0.055), Vector3(4.52, 1.225, 1.98), Color("3e4146"))
-	volume_fader = make_interactive_box("VolumeFader", Vector3(0.13, 0.055, 0.22), Vector3(4.52, 1.265, 1.98), Color("d7d9da"), "fader_volume", 0)
+	make_box("VolumeTrack", Vector3(0.68, 0.025, 0.055), Vector3(2.72, 1.225, 3.43), Color("3e4146"))
+	volume_fader = make_interactive_box("VolumeFader", Vector3(0.13, 0.055, 0.22), Vector3(2.72, 1.265, 3.43), Color("d7d9da"), "fader_volume", 0)
 	# RPM a la izquierda mediante tres botones pequeños.
-	make_interactive_box("RPM45", Vector3(0.18, 0.045, 0.12), Vector3(3.12, 1.265, 1.98), Color("82705c"), "rpm_45", 0)
-	make_interactive_box("RPM33", Vector3(0.18, 0.045, 0.12), Vector3(3.37, 1.265, 1.98), Color("d5b16d"), "rpm_33", 0)
-	make_interactive_box("RPM78", Vector3(0.18, 0.045, 0.12), Vector3(3.62, 1.265, 1.98), Color("82705c"), "rpm_78", 0)
+	make_interactive_box("RPM45", Vector3(0.18, 0.045, 0.12), Vector3(1.32, 1.265, 3.43), Color("82705c"), "rpm_45", 0)
+	make_interactive_box("RPM33", Vector3(0.18, 0.045, 0.12), Vector3(1.57, 1.265, 3.43), Color("d5b16d"), "rpm_33", 0)
+	make_interactive_box("RPM78", Vector3(0.18, 0.045, 0.12), Vector3(1.82, 1.265, 3.43), Color("82705c"), "rpm_78", 0)
 	var amp_controls := Label3D.new()
 	amp_controls.text = "45     33⅓     78                 VOLUMEN"
-	amp_controls.position = Vector3(3.88, 1.34, 2.04)
+	amp_controls.position = Vector3(2.08, 1.34, 3.49)
 	amp_controls.font_size = 18
 	amp_controls.modulate = Color("e7c691")
 	amp_controls.outline_size = 4
 	add_child(amp_controls)
 	amp_display = Label3D.new()
-	amp_display.position = Vector3(4.15, 0.88, 2.44)
+	amp_display.position = Vector3(2.35, 0.88, 3.89)
 	amp_display.font_size = 23
 	amp_display.modulate = Color("8fe69b")
 	amp_display.outline_size = 4
 	add_child(amp_display)
-	var player_body := make_interactive_box("Turntable", Vector3(2.55, 0.27, 1.75), Vector3(4.15, 1.05, 1.2), Color("111317"), "turntable", 0)
+	var player_body := make_interactive_box("Turntable", Vector3(2.55, 0.27, 1.75), Vector3(2.35, 1.05, 2.65), Color("111317"), "turntable", 0)
 	# Plato metálico inspirado en tornamesas de DJ.
 	var platter := MeshInstance3D.new()
 	var platter_mesh := CylinderMesh.new()
@@ -296,17 +310,17 @@ func build_world() -> void:
 	platter_mesh.height = 0.10
 	platter_mesh.radial_segments = 96
 	platter.mesh = platter_mesh
-	platter.position = Vector3(3.95, 1.20, 1.18)
+	platter.position = Vector3(2.15, 1.20, 2.63)
 	var platter_material := material(Color("9b9da1"))
 	platter_material.metallic = 0.9
 	platter_material.roughness = 0.24
 	platter.material_override = platter_material
 	add_child(platter)
 	# Botones cuadrados y luz de encendido en el chasis.
-	make_box("StartStop", Vector3(0.15, 0.025, 0.15), Vector3(3.12, 1.225, 1.62), Color("d8d9d7"))
-	make_box("CueButton", Vector3(0.11, 0.025, 0.08), Vector3(3.35, 1.225, 1.62), Color("a12e2e"))
+	make_box("StartStop", Vector3(0.15, 0.025, 0.15), Vector3(1.32, 1.225, 3.07), Color("d8d9d7"))
+	make_box("CueButton", Vector3(0.11, 0.025, 0.08), Vector3(1.55, 1.225, 3.07), Color("a12e2e"))
 	var power_led := OmniLight3D.new()
-	power_led.position = Vector3(3.45, 1.25, 1.83)
+	power_led.position = Vector3(1.65, 1.25, 3.28)
 	power_led.light_color = Color("ff3c31")
 	power_led.light_energy = 0.7
 	power_led.omni_range = 0.45
@@ -318,7 +332,7 @@ func build_world() -> void:
 	disc_mesh.height = 0.035
 	disc_mesh.radial_segments = 96
 	turntable_disc.mesh = disc_mesh
-	turntable_disc.position = Vector3(3.95, 1.27, 1.18)
+	turntable_disc.position = Vector3(2.15, 1.27, 2.63)
 	var vinyl_material := material(Color("09090c"))
 	vinyl_material.metallic = 0.72
 	vinyl_material.roughness = 0.28
@@ -372,11 +386,11 @@ func build_world() -> void:
 	arm_base_mesh.height = 0.16
 	arm_base_mesh.radial_segments = 48
 	arm_base.mesh = arm_base_mesh
-	arm_base.position = Vector3(5.08, 1.25, 0.52)
+	arm_base.position = Vector3(3.28, 1.25, 1.97)
 	arm_base.material_override = material(Color("24262a"))
 	add_child(arm_base)
 	tonearm_pivot = Node3D.new()
-	tonearm_pivot.position = Vector3(5.08, 1.36, 0.52)
+	tonearm_pivot.position = Vector3(3.28, 1.36, 1.97)
 	tonearm_pivot.rotation.y = tonearm_rest_angle
 	add_child(tonearm_pivot)
 	var tonearm := MeshInstance3D.new()
@@ -995,35 +1009,35 @@ func fill_jazz_audio() -> void:
 
 func create_side_genre_room(genre: String, side: int, z_pos: float, neon_color: Color) -> void:
 	var side_f: float = float(side)
-	var door_x: float = side_f * 3.78
-	var room_center: Vector3 = Vector3(side_f * 5.35, 0.02, z_pos)
-	make_box("RoomFloor%s" % genre, Vector3(2.55, 0.025, 1.35), room_center, Color("1c1718"))
-	var back_wall_size := Vector3(0.12, 2.35, 1.45)
-	var back_wall_pos := Vector3(side_f * 6.70, 1.18, z_pos)
+	var door_x: float = side_f * 4.45
+	var room_center: Vector3 = Vector3(side_f * 6.15, 0.02, z_pos)
+	make_box("RoomFloor%s" % genre, Vector3(3.35, 0.025, 1.95), room_center, Color("1c1718"))
+	var back_wall_size := Vector3(0.12, 1.95, 2.05)
+	var back_wall_pos := Vector3(side_f * 7.80, 0.98, z_pos)
 	make_box("RoomBackWall%s" % genre, back_wall_size, back_wall_pos, Color("302421"))
 	make_collision_box(back_wall_size, back_wall_pos)
-	var front_wall_size := Vector3(0.12, 2.35, 0.36)
-	var front_wall_a_pos := Vector3(door_x, 1.18, z_pos - 0.55)
-	var front_wall_b_pos := Vector3(door_x, 1.18, z_pos + 0.55)
+	var front_wall_size := Vector3(0.12, 1.95, 0.54)
+	var front_wall_a_pos := Vector3(door_x, 0.98, z_pos - 0.72)
+	var front_wall_b_pos := Vector3(door_x, 0.98, z_pos + 0.72)
 	make_box("RoomFrontWallA%s" % genre, front_wall_size, front_wall_a_pos, Color("2a211f"))
 	make_collision_box(front_wall_size, front_wall_a_pos)
 	make_box("RoomFrontWallB%s" % genre, front_wall_size, front_wall_b_pos, Color("2a211f"))
 	make_collision_box(front_wall_size, front_wall_b_pos)
-	var lintel_size := Vector3(0.12, 0.34, 1.22)
-	var lintel_pos := Vector3(door_x, 2.22, z_pos)
+	var lintel_size := Vector3(0.12, 0.24, 1.58)
+	var lintel_pos := Vector3(door_x, 1.92, z_pos)
 	make_box("RoomTopLintel%s" % genre, lintel_size, lintel_pos, Color("3a2a25"))
 	make_collision_box(lintel_size, lintel_pos)
-	var side_wall_size := Vector3(2.6, 2.35, 0.10)
-	var side_wall_a_pos := Vector3(room_center.x, 1.18, z_pos - 0.72)
-	var side_wall_b_pos := Vector3(room_center.x, 1.18, z_pos + 0.72)
+	var side_wall_size := Vector3(3.35, 1.95, 0.10)
+	var side_wall_a_pos := Vector3(room_center.x, 0.98, z_pos - 0.98)
+	var side_wall_b_pos := Vector3(room_center.x, 0.98, z_pos + 0.98)
 	make_box("RoomSideWallA%s" % genre, side_wall_size, side_wall_a_pos, Color("261e1c"))
 	make_collision_box(side_wall_size, side_wall_a_pos)
 	make_box("RoomSideWallB%s" % genre, side_wall_size, side_wall_b_pos, Color("261e1c"))
 	make_collision_box(side_wall_size, side_wall_b_pos)
-	make_box("DoorThreshold%s" % genre, Vector3(0.18, 0.035, 0.78), Vector3(door_x, 0.09, z_pos), neon_color.darkened(0.35))
+	make_box("DoorThreshold%s" % genre, Vector3(0.20, 0.035, 1.10), Vector3(door_x, 0.09, z_pos), neon_color.darkened(0.35))
 	var sign := Label3D.new()
 	sign.text = genre
-	sign.position = Vector3(door_x + side_f * 0.10, 2.55, z_pos)
+	sign.position = Vector3(door_x + side_f * 0.10, 2.18, z_pos)
 	sign.rotation.y = -PI * 0.5 if side < 0 else PI * 0.5
 	sign.font_size = 22
 	sign.modulate = neon_color
@@ -1031,51 +1045,61 @@ func create_side_genre_room(genre: String, side: int, z_pos: float, neon_color: 
 	sign.outline_size = 7
 	add_child(sign)
 	var glow := OmniLight3D.new()
-	glow.position = Vector3(door_x + side_f * 0.35, 2.2, z_pos)
+	glow.position = Vector3(door_x + side_f * 0.40, 1.90, z_pos)
 	glow.light_color = neon_color
 	glow.light_energy = 0.85
 	glow.omni_range = 1.75
 	add_child(glow)
 
 func create_top_genre_room(genre: String, x_pos: float, neon_color: Color) -> void:
-	var z_pos: float = -5.55
-	make_box("RoomFloor%s" % genre, Vector3(1.65, 0.025, 2.45), Vector3(x_pos, 0.02, z_pos), Color("1c1718"))
-	var back_wall_size := Vector3(1.65, 2.35, 0.12)
-	var back_wall_pos := Vector3(x_pos, 1.18, -6.72)
+	var z_pos: float = -6.05
+	make_box("RoomFloor%s" % genre, Vector3(2.45, 0.025, 3.30), Vector3(x_pos, 0.02, z_pos), Color("1c1718"))
+	var back_wall_size := Vector3(2.45, 1.95, 0.12)
+	var back_wall_pos := Vector3(x_pos, 0.98, -7.82)
 	make_box("RoomBackWall%s" % genre, back_wall_size, back_wall_pos, Color("302421"))
 	make_collision_box(back_wall_size, back_wall_pos)
-	var side_wall_size := Vector3(0.10, 2.35, 2.45)
-	var side_wall_a_pos := Vector3(x_pos - 0.82, 1.18, z_pos)
-	var side_wall_b_pos := Vector3(x_pos + 0.82, 1.18, z_pos)
+	var side_wall_size := Vector3(0.10, 1.95, 3.30)
+	var side_wall_a_pos := Vector3(x_pos - 1.22, 0.98, z_pos)
+	var side_wall_b_pos := Vector3(x_pos + 1.22, 0.98, z_pos)
 	make_box("RoomSideWallA%s" % genre, side_wall_size, side_wall_a_pos, Color("261e1c"))
 	make_collision_box(side_wall_size, side_wall_a_pos)
 	make_box("RoomSideWallB%s" % genre, side_wall_size, side_wall_b_pos, Color("261e1c"))
 	make_collision_box(side_wall_size, side_wall_b_pos)
-	var door_frame_size := Vector3(0.42, 2.1, 0.12)
-	var door_frame_a_pos := Vector3(x_pos - 0.58, 1.05, -4.18)
-	var door_frame_b_pos := Vector3(x_pos + 0.58, 1.05, -4.18)
+	var door_frame_size := Vector3(0.62, 1.95, 0.12)
+	var door_frame_a_pos := Vector3(x_pos - 0.78, 0.98, -4.45)
+	var door_frame_b_pos := Vector3(x_pos + 0.78, 0.98, -4.45)
 	make_box("BackDoorFrameA%s" % genre, door_frame_size, door_frame_a_pos, Color("2a211f"))
 	make_collision_box(door_frame_size, door_frame_a_pos)
 	make_box("BackDoorFrameB%s" % genre, door_frame_size, door_frame_b_pos, Color("2a211f"))
 	make_collision_box(door_frame_size, door_frame_b_pos)
-	var lintel_size := Vector3(1.25, 0.32, 0.12)
-	var lintel_pos := Vector3(x_pos, 2.2, -4.18)
+	var lintel_size := Vector3(1.55, 0.24, 0.12)
+	var lintel_pos := Vector3(x_pos, 1.92, -4.45)
 	make_box("BackDoorLintel%s" % genre, lintel_size, lintel_pos, Color("3a2a25"))
 	make_collision_box(lintel_size, lintel_pos)
 	var sign := Label3D.new()
 	sign.text = genre
-	sign.position = Vector3(x_pos, 2.55, -4.05)
+	sign.position = Vector3(x_pos, 2.18, -4.30)
 	sign.font_size = 24
 	sign.modulate = neon_color
 	sign.outline_modulate = Color("101010")
 	sign.outline_size = 7
 	add_child(sign)
 	var glow := OmniLight3D.new()
-	glow.position = Vector3(x_pos, 2.2, -3.95)
+	glow.position = Vector3(x_pos, 1.90, -4.15)
 	glow.light_color = neon_color
 	glow.light_energy = 0.85
 	glow.omni_range = 1.75
 	add_child(glow)
+
+func update_sliding_door(delta: float) -> void:
+	if player == null or sliding_door_left == null or sliding_door_right == null:
+		return
+	var distance_to_entry: float = player.global_position.distance_to(Vector3(0, 1.0, 4.72))
+	var open_amount: float = 1.0 if distance_to_entry < 2.05 else 0.0
+	var left_target_x: float = lerp(-0.43, -1.08, open_amount)
+	var right_target_x: float = lerp(0.43, 1.08, open_amount)
+	sliding_door_left.position.x = lerp(sliding_door_left.position.x, left_target_x, min(1.0, delta * 5.0))
+	sliding_door_right.position.x = lerp(sliding_door_right.position.x, right_target_x, min(1.0, delta * 5.0))
 
 func create_tree(base_position: Vector3) -> void:
 	var trunk := MeshInstance3D.new()
