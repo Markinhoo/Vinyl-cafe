@@ -43,10 +43,10 @@ var active_artist_id := -1
 var turntable_artist_id := -1
 var artist_titles: Array[String] = ["Hoy es diferente", "Abyss 404"]
 var artist_names: Array[String] = ["Abraham HDZ", "9 MONARCA"]
-var artist_genres: Array[String] = ["Regional mexicano", "Rap y Hip Hop"]
+var artist_genres: Array[String] = ["Regional mexicano", "Metalcore"]
 var artist_audio_paths: Array[String] = ["res://assets/audio/hoy_es_diferente.mp3", "res://assets/audio/promesa_perdida.mp3"]
 var artist_cover_paths: Array[String] = ["res://assets/covers/hoy_es_diferente.png", "res://assets/covers/promesa_perdida.jpeg"]
-var artist_shelf_positions: Array[Vector3] = [Vector3(2.10, 1.55, -3.28), Vector3(0.55, 1.55, -3.28)]
+var artist_shelf_positions: Array[Vector3] = [Vector3(2.10, 1.55, -3.28), Vector3(-3.35, 1.55, -3.28)]
 var artist_floor_positions: Array[Vector3] = [Vector3(-3.55, 0.08, 0.85), Vector3(3.25, 0.08, 0.95)]
 var amp_volume_db := -6.0
 var rpm_mode := 1
@@ -193,8 +193,9 @@ func build_world() -> void:
 
 	# Cuartos/secciones por género con letreros neón.
 	create_genre_room("ROCK", Vector3(-4.7, 1.55, -2.65), Color("d43c3c"))
-	create_genre_room("METAL", Vector3(-3.45, 1.55, -2.65), Color("b7b7c8"))
-	create_genre_room("JAZZ", Vector3(-2.20, 1.55, -2.65), Color("ffb866"))
+	create_genre_room("METAL", Vector3(-3.95, 1.55, -2.65), Color("b7b7c8"))
+	create_genre_room("METALCORE", Vector3(-2.95, 1.55, -2.65), Color("7e6bff"))
+	create_genre_room("JAZZ", Vector3(-1.95, 1.55, -2.65), Color("ffb866"))
 	create_genre_room("PUNK", Vector3(-0.95, 1.55, -2.65), Color("9dff38"))
 	create_genre_room("RAP Y HIP HOP", Vector3(0.55, 1.55, -2.65), Color("42d7ff"))
 	create_genre_room("REGIONAL MEXICANO", Vector3(2.10, 1.55, -2.65), Color("ff8c42"))
@@ -234,7 +235,7 @@ func build_world() -> void:
 
 	# Estantes de artistas por género, separados y pegados a la pared.
 	create_genre_shelf("REGIONAL MEXICANO", artist_shelf_positions[0], Color("7a4023"))
-	create_genre_shelf("RAP Y HIP HOP", artist_shelf_positions[1], Color("253f62"))
+	create_genre_shelf("METALCORE", artist_shelf_positions[1], Color("3b335f"))
 
 	# Lanzamientos de artistas independientes, también tirados en el suelo al inicio.
 	for artist_id in artist_titles.size():

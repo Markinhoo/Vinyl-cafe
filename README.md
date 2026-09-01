@@ -21,7 +21,7 @@ Prototipo jugable para Godot 4. Incluye una intro sin textos caminando desde una
 - Pulsa **F** para prender o apagar la linterna.
 - Pulsa **Esc** para liberar el cursor; haz clic en la ventana para capturarlo otra vez.
 - Los cinco discos de jazz empiezan tirados en el suelo y deben colocarse de izquierda a derecha en su estante correcto. Cada acierto suma 100 puntos.
-- Los discos de artistas también empiezan tirados; Abraham HDZ va en Regional Mexicano y 9 MONARCA va en Rap y Hip Hop. Cada artista acomodado suma 150 puntos.
+- Los discos de artistas también empiezan tirados; Abraham HDZ va en Regional Mexicano y 9 MONARCA va en Metalcore. Cada artista acomodado suma 150 puntos.
 
 La pista incluida es únicamente una demostración sintetizada por código; no contiene música comercial ni material con derechos de terceros.
 
@@ -39,7 +39,7 @@ La pista incluida es únicamente una demostración sintetizada por código; no c
 
 ## Cuartos de género
 
-La tienda incluye secciones con letrero neón para Rock, Metal, Jazz, Punk, Rap y Hip Hop, Regional Mexicano, Reguetón y Pop.
+La tienda incluye secciones con letrero neón para Rock, Metal, Metalcore, Jazz, Punk, Rap y Hip Hop, Regional Mexicano, Reguetón y Pop.
 
 ## Artistas independientes incluidos
 
