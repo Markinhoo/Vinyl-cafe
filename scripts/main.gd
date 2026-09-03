@@ -47,7 +47,7 @@ var artist_genres: Array[String] = ["Regional mexicano", "Metalcore"]
 var artist_audio_paths: Array[String] = ["res://assets/audio/hoy_es_diferente.mp3", "res://assets/audio/promesa_perdida.mp3"]
 var artist_cover_paths: Array[String] = ["res://assets/covers/hoy_es_diferente.png", "res://assets/covers/promesa_perdida.jpeg"]
 var artist_shelf_positions: Array[Vector3] = [Vector3(-6.65, 1.35, -2.80), Vector3(-6.65, 1.35, 0.0)]
-var artist_floor_positions: Array[Vector3] = [Vector3(0.45, 0.08, -1.20), Vector3(-0.45, 0.08, 2.05)]
+var artist_floor_positions: Array[Vector3] = [Vector3(-0.35, 0.08, -1.85), Vector3(0.25, 0.08, 2.65)]
 var amp_volume_db := -6.0
 var rpm_mode := 1
 var rpm_drag_position := 0.5
@@ -56,19 +56,20 @@ var volume_fader: StaticBody3D
 var rpm_fader: StaticBody3D
 var active_fader := ""
 var tonearm_pivot: Node3D
-var tonearm_target_angle := PI
+var tonearm_target_angle := 0.0
 var turntable_label: MeshInstance3D
 var turntable_art_material: StandardMaterial3D
 var spectrum_analyzer: AudioEffectSpectrumAnalyzerInstance
 var music_bus_index := -1
 var led_columns: Array = []
-var tonearm_start_angle := 0.06
-var tonearm_center_angle := -0.20
-var tonearm_rest_angle := 0.34
+var tonearm_start_angle := -0.28
+var tonearm_center_angle := -0.80
+var tonearm_rest_angle := 0.0
 var look_pitch := 0.0
 var sliding_door_left: MeshInstance3D
 var sliding_door_right: MeshInstance3D
 var turntable_model_root: Node3D
+var turntable_station: Node3D
 const WALK_SPEED := 4.0
 const MOUSE_SENSITIVITY := 0.0022
 
@@ -130,11 +131,13 @@ func build_world() -> void:
 	var player_collision := CollisionShape3D.new()
 	var capsule := CapsuleShape3D.new()
 	capsule.radius = 0.35
-	capsule.height = 1.8
+	capsule.height = 1.9
 	player_collision.shape = capsule
 	player.add_child(player_collision)
+	player.collision_layer = 1
+	player.collision_mask = 1
 	player_camera = Camera3D.new()
-	player_camera.position = Vector3(0, 1.35, 0)
+	player_camera.position = Vector3(0, 1.65, 0)
 	player_camera.current = true
 	player.add_child(player_camera)
 	flashlight = SpotLight3D.new()
@@ -248,11 +251,11 @@ func build_world() -> void:
 	var colors := [Color("7b3045"), Color("304f72"), Color("86682e"), Color("446247"), Color("684072")]
 	var titles := ["Midnight Blue", "Rain on 52nd", "Amber Notes", "Green Room", "Last Set"]
 	var floor_positions: Array[Vector3] = [
-		Vector3(-0.72, 0.08, 3.15),
-		Vector3(0.65, 0.08, 2.45),
-		Vector3(-0.25, 0.08, 1.55),
-		Vector3(0.85, 0.08, 0.55),
-		Vector3(-0.78, 0.08, -0.35)
+		Vector3(-1.95, 0.08, 2.70),
+		Vector3(1.90, 0.08, 2.40),
+		Vector3(-2.25, 0.08, 0.30),
+		Vector3(2.25, 0.08, -0.60),
+		Vector3(-1.90, 0.08, -1.70)
 	]
 	var floor_rotations: Array[float] = [18.0, -24.0, 41.0, -13.0, 29.0]
 	for i in VINYL_COUNT:
@@ -278,137 +281,7 @@ func build_world() -> void:
 		artist_records.append(display)
 	artist_record = artist_records[0]
 
-	# Turntable table and player.
-	make_box("TurntableStand", Vector3(2.8, 0.9, 2.1), Vector3(2.35, 0.45, 2.65), Color("34231d"))
-	# Amplificador con faders arrastrables, como una pequeña mezcladora.
-	make_box("Amplifier", Vector3(2.35, 0.72, 0.18), Vector3(2.35, 0.48, 3.75), Color("181715"))
-	# Volumen a la derecha, integrado en la superficie de la tornamesa.
-	make_box("VolumeTrack", Vector3(0.68, 0.025, 0.055), Vector3(2.72, 1.865, 3.43), Color("3e4146"))
-	volume_fader = make_interactive_box("VolumeFader", Vector3(0.13, 0.055, 0.22), Vector3(2.72, 1.905, 3.43), Color("d7d9da"), "fader_volume", 0)
-	# RPM a la izquierda mediante tres botones pequeños.
-	make_interactive_box("RPM45", Vector3(0.18, 0.045, 0.12), Vector3(1.32, 1.905, 3.43), Color("82705c"), "rpm_45", 0)
-	make_interactive_box("RPM33", Vector3(0.18, 0.045, 0.12), Vector3(1.57, 1.905, 3.43), Color("d5b16d"), "rpm_33", 0)
-	make_interactive_box("RPM78", Vector3(0.18, 0.045, 0.12), Vector3(1.82, 1.905, 3.43), Color("82705c"), "rpm_78", 0)
-	var amp_controls := Label3D.new()
-	amp_controls.text = "45     33⅓     78                 VOLUMEN"
-	amp_controls.position = Vector3(2.08, 1.98, 3.49)
-	amp_controls.font_size = 18
-	amp_controls.modulate = Color("e7c691")
-	amp_controls.outline_size = 4
-	add_child(amp_controls)
-	amp_display = Label3D.new()
-	amp_display.position = Vector3(2.35, 0.88, 3.89)
-	amp_display.font_size = 23
-	amp_display.modulate = Color("8fe69b")
-	amp_display.outline_size = 4
-	add_child(amp_display)
-	var player_body := make_interactive_box("Turntable", Vector3(2.30, 1.02, 2.05), Vector3(2.35, 1.41, 2.65), Color("111317"), "turntable", 0)
-	# El GLB sustituye la caja visual; este StaticBody3D conserva una colisión
-	# sencilla y fiable para apuntar, colocar y retirar discos.
-	var placeholder_visual: MeshInstance3D = player_body.get_child(0) as MeshInstance3D
-	if placeholder_visual != null:
-		placeholder_visual.visible = false
-	turntable_model_root = load_turntable_model()
-	# Plato funcional invisible: el modelo aporta el plato visual y el disco se monta encima.
-	# Plato metálico inspirado en tornamesas de DJ.
-	var platter := MeshInstance3D.new()
-	var platter_mesh := CylinderMesh.new()
-	platter_mesh.top_radius = 0.77
-	platter_mesh.bottom_radius = 0.77
-	platter_mesh.height = 0.10
-	platter_mesh.radial_segments = 96
-	platter.mesh = platter_mesh
-	platter.position = Vector3(2.15, 1.20, 2.63)
-	var platter_material := material(Color("9b9da1"))
-	platter_material.metallic = 0.9
-	platter_material.roughness = 0.24
-	platter.material_override = platter_material
-	add_child(platter)
-	platter.visible = false
-	# Botones cuadrados y luz de encendido en el chasis.
-	make_box("StartStop", Vector3(0.15, 0.025, 0.15), Vector3(1.32, 1.865, 3.07), Color("d8d9d7"))
-	make_box("CueButton", Vector3(0.11, 0.025, 0.08), Vector3(1.55, 1.865, 3.07), Color("a12e2e"))
-	var power_led := OmniLight3D.new()
-	power_led.position = Vector3(1.65, 1.89, 3.28)
-	power_led.light_color = Color("ff3c31")
-	power_led.light_energy = 0.7
-	power_led.omni_range = 0.45
-	add_child(power_led)
-	turntable_disc = MeshInstance3D.new()
-	var disc_mesh := CylinderMesh.new()
-	disc_mesh.top_radius = 0.68
-	disc_mesh.bottom_radius = 0.68
-	disc_mesh.height = 0.035
-	disc_mesh.radial_segments = 96
-	turntable_disc.mesh = disc_mesh
-	turntable_disc.position = Vector3(2.15, 1.92, 2.63)
-	var vinyl_material := material(Color("09090c"))
-	vinyl_material.metallic = 0.72
-	vinyl_material.roughness = 0.28
-	turntable_disc.material_override = vinyl_material
-	turntable_disc.visible = false
-	add_child(turntable_disc)
-	# Surcos concéntricos que giran junto con el vinilo.
-	for groove_radius in [0.31, 0.37, 0.43, 0.49, 0.55, 0.61]:
-		var groove := MeshInstance3D.new()
-		var ring := TorusMesh.new()
-		ring.inner_radius = groove_radius - 0.006
-		ring.outer_radius = groove_radius + 0.006
-		ring.rings = 48
-		ring.ring_segments = 6
-		groove.mesh = ring
-		groove.position.y = 0.022
-		groove.material_override = material(Color("34343a"))
-		turntable_disc.add_child(groove)
-	# Etiqueta circular central con la portada del lanzamiento.
-	turntable_label = MeshInstance3D.new()
-	var label_mesh := CylinderMesh.new()
-	label_mesh.top_radius = 0.245
-	label_mesh.bottom_radius = 0.245
-	label_mesh.height = 0.042
-	label_mesh.radial_segments = 72
-	turntable_label.mesh = label_mesh
-	turntable_label.position.y = 0.022
-	var label_material := StandardMaterial3D.new()
-	label_material.albedo_color = Color("d99b45")
-	label_material.roughness = 0.6
-	turntable_label.material_override = label_material
-	turntable_disc.add_child(turntable_label)
-	# Portada completa, más pequeña y sin recorte circular.
-	var label_art := MeshInstance3D.new()
-	var label_art_mesh := QuadMesh.new()
-	label_art_mesh.size = Vector2(0.36, 0.36)
-	label_art.mesh = label_art_mesh
-	label_art.position = Vector3(0, 0.046, 0)
-	label_art.rotation = Vector3(-PI * 0.5, 0, 0)
-	var label_art_material := StandardMaterial3D.new()
-	label_art_material.albedo_texture = load("res://assets/covers/hoy_es_diferente.png")
-	label_art_material.roughness = 0.58
-	label_art.material_override = label_art_material
-	turntable_art_material = label_art_material
-	turntable_disc.add_child(label_art)
-	# El brazo real proviene de model_part3 en el GLB segmentado.
-	tonearm_pivot = load_segmented_tonearm()
-
-	audio_player = AudioStreamPlayer3D.new()
-	audio_player.position = player_body.position
-	audio_player.max_distance = 18.0
-	var generator := AudioStreamGenerator.new()
-	generator.mix_rate = 44100.0
-	generator.buffer_length = 0.35
-	audio_player.stream = generator
-	add_child(audio_player)
-	return_sound_player = AudioStreamPlayer3D.new()
-	return_sound_player.max_distance = 9.0
-	var return_generator := AudioStreamGenerator.new()
-	return_generator.mix_rate = 44100.0
-	return_generator.buffer_length = 0.18
-	return_sound_player.stream = return_generator
-	add_child(return_sound_player)
-	setup_music_analyzer()
-	audio_player.finished.connect(_on_audio_finished)
-	build_led_spectrum()
-	update_amplifier()
+	build_turntable_station()
 
 	# Restorable café lighting.
 	var light_positions := [Vector3(-4, 3.7, 1.2), Vector3(-1.4, 3.7, 1.2), Vector3(1.4, 3.7, 1.2), Vector3(4, 3.7, 1.2), Vector3(0, 4.4, -2.5)]
@@ -546,6 +419,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			var end := origin + player_camera.project_ray_normal(center) * 4.0
 			var query := PhysicsRayQueryParameters3D.create(origin, end)
 			query.exclude = [player.get_rid()]
+			query.collision_mask = 3
 			var hit := get_world_3d().direct_space_state.intersect_ray(query)
 			if hit and hit.collider.has_meta("kind"):
 				var kind: String = hit.collider.get_meta("kind")
@@ -563,6 +437,7 @@ func interact_from_center() -> void:
 	var end := origin + player_camera.project_ray_normal(center) * 4.0
 	var query := PhysicsRayQueryParameters3D.create(origin, end)
 	query.exclude = [player.get_rid()]
+	query.collision_mask = 3
 	var hit := get_world_3d().direct_space_state.intersect_ray(query)
 	if hit and hit.collider.has_meta("kind"):
 		handle_click(hit.collider)
@@ -617,6 +492,119 @@ func handle_click(object: Object) -> void:
 		status_label.text = "Mantén clic izquierdo y arrastra horizontalmente."
 
 
+func build_turntable_station() -> void:
+	turntable_station = Node3D.new()
+	turntable_station.name = "CenteredTurntableStation"
+	turntable_station.position = Vector3(0.0, 0.0, 0.35)
+	add_child(turntable_station)
+
+	make_box_in_parent(turntable_station, "TurntableStand", Vector3(2.60, 0.90, 2.40), Vector3(0.0, 0.45, 0.0), Color("34231d"))
+	make_collision_box_in_parent(turntable_station, Vector3(2.60, 0.90, 2.40), Vector3(0.0, 0.45, 0.0))
+	make_box_in_parent(turntable_station, "Amplifier", Vector3(2.24, 0.54, 0.18), Vector3(0.0, 0.42, 1.24), Color("181715"))
+	make_box_in_parent(turntable_station, "ControlPanel", Vector3(2.15, 0.035, 0.20), Vector3(0.0, 1.335, 1.03), Color("211713"))
+	make_box_in_parent(turntable_station, "VolumeTrack", Vector3(0.62, 0.020, 0.045), Vector3(0.65, 1.360, 1.035), Color("3e4146"))
+	volume_fader = make_interactive_box_in_parent(turntable_station, "VolumeFader", Vector3(0.12, 0.055, 0.18), Vector3(0.65, 1.395, 1.035), Color("d7d9da"), "fader_volume", 0)
+	make_interactive_box_in_parent(turntable_station, "RPM45", Vector3(0.16, 0.045, 0.11), Vector3(-1.00, 1.380, 1.035), Color("82705c"), "rpm_45", 0)
+	make_interactive_box_in_parent(turntable_station, "RPM33", Vector3(0.16, 0.045, 0.11), Vector3(-0.77, 1.380, 1.035), Color("d5b16d"), "rpm_33", 0)
+	make_interactive_box_in_parent(turntable_station, "RPM78", Vector3(0.16, 0.045, 0.11), Vector3(-0.54, 1.380, 1.035), Color("82705c"), "rpm_78", 0)
+	var amp_controls := Label3D.new()
+	amp_controls.text = "45   33 1/3   78        VOLUMEN"
+	amp_controls.position = Vector3(-0.16, 1.425, 1.105)
+	amp_controls.rotation.x = deg_to_rad(-72.0)
+	amp_controls.font_size = 13
+	amp_controls.modulate = Color("e7c691")
+	amp_controls.outline_size = 3
+	turntable_station.add_child(amp_controls)
+	amp_display = Label3D.new()
+	amp_display.position = Vector3(0.45, 0.78, 1.355)
+	amp_display.font_size = 19
+	amp_display.modulate = Color("8fe69b")
+	amp_display.outline_size = 4
+	turntable_station.add_child(amp_display)
+	var player_body := make_interactive_box_in_parent(turntable_station, "Turntable", Vector3(2.28, 0.46, 1.85), Vector3(0.0, 1.12, 0.08), Color("111317"), "turntable", 0)
+	var placeholder_visual: MeshInstance3D = player_body.get_child(0) as MeshInstance3D
+	if placeholder_visual != null:
+		placeholder_visual.visible = false
+	turntable_model_root = load_turntable_model(turntable_station)
+
+	turntable_disc = MeshInstance3D.new()
+	var disc_mesh := CylinderMesh.new()
+	disc_mesh.top_radius = 0.77
+	disc_mesh.bottom_radius = 0.77
+	disc_mesh.height = 0.014
+	disc_mesh.radial_segments = 112
+	turntable_disc.mesh = disc_mesh
+	turntable_disc.position = Vector3(-0.24, 1.430, 0.18)
+	var vinyl_material := material(Color("09090c"))
+	vinyl_material.metallic = 0.72
+	vinyl_material.roughness = 0.28
+	turntable_disc.material_override = vinyl_material
+	turntable_disc.visible = false
+	turntable_station.add_child(turntable_disc)
+	for groove_radius in [0.32, 0.39, 0.46, 0.53, 0.60, 0.67]:
+		var groove := MeshInstance3D.new()
+		var ring := TorusMesh.new()
+		ring.inner_radius = groove_radius - 0.005
+		ring.outer_radius = groove_radius + 0.005
+		ring.rings = 56
+		ring.ring_segments = 6
+		groove.mesh = ring
+		groove.position.y = 0.011
+		groove.material_override = material(Color("34343a"))
+		turntable_disc.add_child(groove)
+	turntable_label = MeshInstance3D.new()
+	var label_mesh := CylinderMesh.new()
+	label_mesh.top_radius = 0.245
+	label_mesh.bottom_radius = 0.245
+	label_mesh.height = 0.018
+	label_mesh.radial_segments = 72
+	turntable_label.mesh = label_mesh
+	turntable_label.position.y = 0.013
+	var label_material := StandardMaterial3D.new()
+	label_material.albedo_color = Color("d99b45")
+	label_material.roughness = 0.6
+	turntable_label.material_override = label_material
+	turntable_disc.add_child(turntable_label)
+	var label_art := MeshInstance3D.new()
+	var label_art_mesh := QuadMesh.new()
+	label_art_mesh.size = Vector2(0.42, 0.42)
+	label_art.mesh = label_art_mesh
+	label_art.position = Vector3(0, 0.024, 0)
+	label_art.rotation = Vector3(-PI * 0.5, 0, 0)
+	var label_art_material := StandardMaterial3D.new()
+	label_art_material.albedo_texture = load("res://assets/covers/hoy_es_diferente.png")
+	label_art_material.roughness = 0.58
+	label_art.material_override = label_art_material
+	turntable_art_material = label_art_material
+	turntable_disc.add_child(label_art)
+
+	var power_led := OmniLight3D.new()
+	power_led.position = Vector3(-1.16, 1.395, 0.98)
+	power_led.light_color = Color("ff3c31")
+	power_led.light_energy = 0.7
+	power_led.omni_range = 0.45
+	turntable_station.add_child(power_led)
+	audio_player = AudioStreamPlayer3D.new()
+	audio_player.position = Vector3(0.0, 1.10, 0.0)
+	audio_player.max_distance = 18.0
+	var generator := AudioStreamGenerator.new()
+	generator.mix_rate = 44100.0
+	generator.buffer_length = 0.35
+	audio_player.stream = generator
+	turntable_station.add_child(audio_player)
+	return_sound_player = AudioStreamPlayer3D.new()
+	return_sound_player.max_distance = 9.0
+	var return_generator := AudioStreamGenerator.new()
+	return_generator.mix_rate = 44100.0
+	return_generator.buffer_length = 0.18
+	return_sound_player.stream = return_generator
+	add_child(return_sound_player)
+	setup_music_analyzer()
+	audio_player.finished.connect(_on_audio_finished)
+	build_led_spectrum()
+	update_amplifier()
+
+
 
 
 func setup_music_analyzer() -> void:
@@ -636,6 +624,7 @@ func build_led_spectrum() -> void:
 	# Diez bandas por ocho niveles, colocadas en el frontal del amplificador.
 	var frequencies := 10
 	var levels := 8
+	var parent_node: Node = turntable_station if turntable_station != null else self
 	for column in frequencies:
 		var column_leds: Array[MeshInstance3D] = []
 		for row in levels:
@@ -643,7 +632,7 @@ func build_led_spectrum() -> void:
 			var led_mesh := BoxMesh.new()
 			led_mesh.size = Vector3(0.055, 0.025, 0.025)
 			led.mesh = led_mesh
-			led.position = Vector3(3.88 + column * 0.065, 0.31 + row * 0.052, 2.495)
+			led.position = Vector3(-0.35 + column * 0.065, 0.28 + row * 0.047, 1.34)
 			var led_color := Color("ff3b30") if row < 2 else (Color("d8ff3e") if row < 4 else (Color("19d9ff") if row < 7 else Color("d94cff")))
 			var led_material := StandardMaterial3D.new()
 			led_material.albedo_color = led_color
@@ -652,7 +641,7 @@ func build_led_spectrum() -> void:
 			led_material.emission_energy_multiplier = 2.6
 			led.material_override = led_material
 			led.visible = false
-			add_child(led)
+			parent_node.add_child(led)
 			column_leds.append(led)
 		led_columns.append(column_leds)
 
@@ -722,8 +711,8 @@ func update_amplifier() -> void:
 		audio_player.pitch_scale = get_playback_multiplier()
 	if volume_fader != null:
 		var volume_t: float = inverse_lerp(-30.0, 6.0, amp_volume_db)
-		volume_fader.position.x = lerp(4.18, 4.86, volume_t)
-		volume_fader.position.z = 1.98
+		volume_fader.position.x = lerp(0.35, 0.95, volume_t)
+		volume_fader.position.z = 1.035
 	if amp_display != null:
 		amp_display.text = "%+.0f dB      %s" % [amp_volume_db, get_rpm_label()]
 
@@ -765,6 +754,7 @@ func get_center_hit() -> Dictionary:
 	var end := origin + player_camera.project_ray_normal(center) * 4.0
 	var query := PhysicsRayQueryParameters3D.create(origin, end)
 	query.exclude = [player.get_rid()]
+	query.collision_mask = 3
 	return get_world_3d().direct_space_state.intersect_ray(query)
 
 func take_artist_record(from_turntable: bool) -> void:
@@ -861,8 +851,8 @@ func _on_artist_returned_to_shelf(record: StaticBody3D, returned_artist_id: int)
 	record.position = artist_shelf_positions[returned_artist_id]
 	record.rotation = Vector3.ZERO
 	record.scale = Vector3.ONE
-	record.collision_layer = 1
-	record.collision_mask = 1
+	record.collision_layer = 2
+	record.collision_mask = 0
 	status_label.text = "%s quedó en su sección: %s. Ya puedes tomar otro disco." % [artist_titles[returned_artist_id], artist_genres[returned_artist_id]]
 
 func play_return_sound(position: Vector3) -> void:
@@ -1192,10 +1182,10 @@ func create_artist_display(artist_id: int, song_title: String, artist_name: Stri
 	add_child(display_label)
 	return record
 
-func load_turntable_model() -> Node3D:
-	var model_scene: PackedScene = load("res://assets/models/audio_technica_turntable_textured.glb") as PackedScene
+func load_turntable_model(parent: Node3D) -> Node3D:
+	var model_scene: PackedScene = load("res://assets/models/turntable_rigged_v2.glb") as PackedScene
 	if model_scene == null:
-		push_warning("No se pudo cargar el modelo 3D de la tornamesa.")
+		push_warning("No se pudo cargar el modelo riggeado de la tornamesa.")
 		return null
 	var model_instance: Node3D = model_scene.instantiate() as Node3D
 	if model_instance == null:
@@ -1203,54 +1193,18 @@ func load_turntable_model() -> Node3D:
 		return null
 	var model_mount := Node3D.new()
 	model_mount.name = "AudioTechnicaTurntableMount"
-	# El archivo viene inclinado. Primero se corrige la inclinación del hijo y
-	# después el soporte adapta su altura, sin deformar sus ejes de profundidad.
-	model_mount.position = Vector3(2.35, 1.485, 2.65)
-	model_mount.scale = Vector3(1.05, 0.62, 1.05)
+	# El GLB original ya está nivelado; se mantiene escala uniforme para no aplastarlo.
+	model_mount.position = Vector3(0.0, 1.8097, 0.0)
+	model_mount.scale = Vector3.ONE * 1.20
 	model_instance.name = "AudioTechnicaTurntableModel"
-	model_instance.rotation.x = deg_to_rad(-32.1)
 	model_mount.add_child(model_instance)
-	add_child(model_mount)
+	parent.add_child(model_mount)
+	tonearm_pivot = model_instance.find_child("TonearmPivot", true, false) as Node3D
+	if tonearm_pivot != null:
+		tonearm_pivot.rotation.y = tonearm_rest_angle
+	else:
+		push_warning("No se encontró TonearmPivot en turntable_rigged_v2.glb.")
 	return model_mount
-
-func load_segmented_tonearm() -> Node3D:
-	var pivot := Node3D.new()
-	pivot.name = "SegmentedTonearmPivot"
-	pivot.position = Vector3(3.25, 1.93, 2.03)
-	pivot.rotation.y = tonearm_rest_angle
-	add_child(pivot)
-	var segmented_scene: PackedScene = load("res://assets/models/audio_technica_turntable_segmented.glb") as PackedScene
-	if segmented_scene == null:
-		push_warning("No se pudo cargar el modelo segmentado de la tornamesa.")
-		return pivot
-	var segmented_instance: Node3D = segmented_scene.instantiate() as Node3D
-	if segmented_instance == null:
-		return pivot
-	var arm_part: Node3D = segmented_instance.get_node_or_null("model_part3") as Node3D
-	if arm_part == null:
-		push_warning("No se encontró model_part3, la pieza del brazo segmentado.")
-		segmented_instance.queue_free()
-		return pivot
-	segmented_instance.remove_child(arm_part)
-	# model_part3 usa coordenadas cuantizadas; se normaliza alrededor de su base.
-	var arm_scale: float = 0.000105
-	arm_part.position = Vector3(-15200.0, -3066.0, -3562.0) * arm_scale
-	arm_part.scale = Vector3.ONE * arm_scale
-	apply_tonearm_material(arm_part)
-	pivot.add_child(arm_part)
-	segmented_instance.queue_free()
-	return pivot
-
-func apply_tonearm_material(node: Node) -> void:
-	if node is MeshInstance3D:
-		var mesh_node: MeshInstance3D = node as MeshInstance3D
-		var arm_material := StandardMaterial3D.new()
-		arm_material.albedo_color = Color("b7bcc2")
-		arm_material.metallic = 0.82
-		arm_material.roughness = 0.24
-		mesh_node.material_override = arm_material
-	for child_node: Node in node.get_children():
-		apply_tonearm_material(child_node)
 
 func make_box(label: String, size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
 	var mesh_instance := MeshInstance3D.new()
@@ -1261,6 +1215,17 @@ func make_box(label: String, size: Vector3, pos: Vector3, color: Color) -> MeshI
 	mesh_instance.position = pos
 	mesh_instance.material_override = material(color)
 	add_child(mesh_instance)
+	return mesh_instance
+
+func make_box_in_parent(parent: Node3D, label: String, size: Vector3, pos: Vector3, color: Color) -> MeshInstance3D:
+	var mesh_instance := MeshInstance3D.new()
+	mesh_instance.name = label
+	var box := BoxMesh.new()
+	box.size = size
+	mesh_instance.mesh = box
+	mesh_instance.position = pos
+	mesh_instance.material_override = material(color)
+	parent.add_child(mesh_instance)
 	return mesh_instance
 
 func make_interactive_box(label: String, size: Vector3, pos: Vector3, color: Color, kind: String, index: int) -> StaticBody3D:
@@ -1280,18 +1245,64 @@ func make_interactive_box(label: String, size: Vector3, pos: Vector3, color: Col
 	shape.size = size
 	collision.shape = shape
 	body.add_child(collision)
+	if kind == "vinyl" or kind == "artist_record":
+		body.collision_layer = 2
+		body.collision_mask = 0
+	else:
+		body.collision_layer = 1
+		body.collision_mask = 1
 	add_child(body)
+	return body
+
+func make_interactive_box_in_parent(parent: Node3D, label: String, size: Vector3, pos: Vector3, color: Color, kind: String, index: int) -> StaticBody3D:
+	var body := StaticBody3D.new()
+	body.name = label
+	body.position = pos
+	body.set_meta("kind", kind)
+	body.set_meta("index", index)
+	var visual := MeshInstance3D.new()
+	var box := BoxMesh.new()
+	box.size = size
+	visual.mesh = box
+	visual.material_override = material(color)
+	body.add_child(visual)
+	var collision := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = size
+	collision.shape = shape
+	body.add_child(collision)
+	if kind == "vinyl" or kind == "artist_record":
+		body.collision_layer = 2
+		body.collision_mask = 0
+	else:
+		body.collision_layer = 1
+		body.collision_mask = 1
+	parent.add_child(body)
 	return body
 
 func make_collision_box(size: Vector3, pos: Vector3) -> void:
 	var body := StaticBody3D.new()
 	body.position = pos
+	body.collision_layer = 1
+	body.collision_mask = 1
 	var collision := CollisionShape3D.new()
 	var shape := BoxShape3D.new()
 	shape.size = size
 	collision.shape = shape
 	body.add_child(collision)
 	add_child(body)
+
+func make_collision_box_in_parent(parent: Node3D, size: Vector3, pos: Vector3) -> void:
+	var body := StaticBody3D.new()
+	body.position = pos
+	body.collision_layer = 1
+	body.collision_mask = 1
+	var collision := CollisionShape3D.new()
+	var shape := BoxShape3D.new()
+	shape.size = size
+	collision.shape = shape
+	body.add_child(collision)
+	parent.add_child(body)
 
 func material(color: Color) -> StandardMaterial3D:
 	var mat := StandardMaterial3D.new()

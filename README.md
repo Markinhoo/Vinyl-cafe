@@ -50,7 +50,10 @@ Cada disco conserva su propia portada, canción y contraportada. Al traerlo en l
 
 ## Modelos 3D de la tornamesa
 
-- `assets/models/audio_technica_turntable_textured.glb`: modelo visible usado en el juego.
-- `assets/models/audio_technica_turntable_segmented.glb`: versión segmentada conservada para futuras animaciones o sustitución de piezas.
+- `assets/models/audio_technica_turntable_textured.glb`: modelo original texturizado.
+- `assets/models/audio_technica_turntable_segmented.glb`: modelo segmentado usado como referencia para separar el brazo.
+- `assets/models/turntable_rigged_v2.glb`: versión generada para el juego; mantiene la tornamesa nivelada con escala uniforme y separa `TonearmPivot` para animar el brazo real del modelo.
+- `tools/build_turntable_rig.py`: regenera `turntable_rigged_v2.glb` a partir de los dos modelos fuente sin modificar los originales.
+- `tools/validate_turntable_station.gd`: prueba en Godot que la tornamesa está centrada, nivelada, con brazo animable, controles frontales y discos del suelo sin bloquear al jugador.
 - Los archivos `.glb` se administran con Git LFS por su tamaño.
-- La colisión, el vinilo, la portada central y los controles siguen siendo nodos independientes. El brazo animado utiliza `model_part3` del GLB segmentado y avanza hacia el centro según la reproducción.
+- La colisión, el vinilo, la portada central y los controles siguen siendo nodos independientes, montados sobre una estación central. El brazo animado proviene de `TonearmPivot` en `turntable_rigged_v2.glb` y avanza hacia el centro según la reproducción.

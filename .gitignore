@@ -9,3 +9,11 @@ export_presets.cfg
 Thumbs.db
 *.tmp
 *.log
+
+# Local validation artifacts
+work/
+__pycache__/
+tools/__pycache__/
+tools/*.gd.uid
+assets/models/turntable_rigged.glb
+assets/models/turntable_rigged.glb.import
