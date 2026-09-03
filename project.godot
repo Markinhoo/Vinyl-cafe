@@ -21,6 +21,11 @@ window/size/viewport_height=720
 window/size/window_width_override=1280
 window/size/window_height_override=720
 
+[audio]
+
+driver/output_latency=50
+driver/mix_rate=48000
+
 [rendering]
 
 renderer/rendering_method="gl_compatibility"
